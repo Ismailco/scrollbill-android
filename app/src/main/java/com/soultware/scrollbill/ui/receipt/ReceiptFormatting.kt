@@ -5,15 +5,15 @@ import java.time.format.DateTimeFormatter
 import java.util.Locale
 import kotlin.math.roundToLong
 
-fun formatReceiptDuration(durationMillis: Long): String {
-    val totalMinutes = durationMillis.coerceAtLeast(0L) / MILLIS_PER_MINUTE
+fun formatReceiptDuration(minutes: Long): String {
+    val totalMinutes = minutes.coerceAtLeast(0L)
     val hours = totalMinutes / MINUTES_PER_HOUR
-    val minutes = totalMinutes % MINUTES_PER_HOUR
+    val remainingMinutes = totalMinutes % MINUTES_PER_HOUR
 
     return if (hours > 0L) {
-        "${hours}h ${minutes.toString().padStart(2, '0')}m"
+        "${hours}h ${remainingMinutes.toString().padStart(2, '0')}m"
     } else {
-        "${minutes}m"
+        "${totalMinutes}m"
     }
 }
 
@@ -31,12 +31,27 @@ fun formatReceiptDateRange(startDate: LocalDate, endDateInclusive: LocalDate): S
     }
 }
 
-fun formatYearlyPace(projectedAnnualUsageMillis: Long): String {
-    val days = (projectedAnnualUsageMillis.coerceAtLeast(0L).toDouble() / MILLIS_PER_DAY)
-        .roundToLong()
-    return "~$days days"
+fun formatYearlyPace(projectedAnnualDays: Long): String = "~${projectedAnnualDays.coerceAtLeast(0L)} days"
+
+internal fun ellipsizeToWidth(
+    text: String,
+    maxWidth: Float,
+    measureText: (String) -> Float,
+): String {
+    if (maxWidth <= 0f) return ""
+    if (measureText(text) <= maxWidth) return text
+
+    val ellipsis = "…"
+    val ellipsisWidth = measureText(ellipsis)
+    if (ellipsisWidth > maxWidth) return ""
+    val availableWidth = maxWidth - ellipsisWidth
+    if (availableWidth <= 0f) return ellipsis
+
+    var end = text.length
+    while (end > 0 && measureText(text.substring(0, end)) > availableWidth) {
+        end--
+    }
+    return text.substring(0, end).trimEnd() + ellipsis
 }
 
-private const val MILLIS_PER_MINUTE = 60_000L
 private const val MINUTES_PER_HOUR = 60L
-private const val MILLIS_PER_DAY = 86_400_000L

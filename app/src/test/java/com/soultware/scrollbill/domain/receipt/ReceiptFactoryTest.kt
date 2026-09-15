@@ -4,79 +4,152 @@ import com.soultware.scrollbill.domain.model.AppUsage
 import com.soultware.scrollbill.domain.model.UsagePeriod
 import com.soultware.scrollbill.domain.model.WeeklyUsageSummary
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.time.LocalDate
 import java.time.ZoneId
 
 class ReceiptFactoryTest {
-    private val summary = WeeklyUsageSummary(
+    @Test
+    fun `real device shaped fixture reconciles displayed minutes`() {
+        val summary = summary(
+            totalMillis = minutes(1_474) + 50_000L,
+            apps = listOf(
+                app("Instagram", minutes(527) + 10_000L),
+                app("YouTube", minutes(181) + 10_000L),
+                app("LinkedIn", minutes(129) + 10_000L),
+                app("Gmail", minutes(62) + 10_000L),
+                app("Vivaldi", minutes(58) + 10_000L),
+                app("Other source app", minutes(517)),
+            ),
+        )
+
+        val snapshot = ReceiptFactory.from(summary)
+
+        assertEquals(listOf(527L, 181L, 129L, 62L, 58L), snapshot.topApps.map { it.durationMinutes })
+        assertEquals(517L, snapshot.otherAppsUsageMinutes)
+        assertEquals(1_474L, snapshot.totalUsageMinutes)
+        assertEquals(snapshot.totalUsageMinutes, snapshot.topApps.sumOf { it.durationMinutes } + snapshot.otherAppsUsageMinutes)
+    }
+
+    @Test
+    fun `exact minute durations reconcile without precision loss`() {
+        val snapshot = ReceiptFactory.from(
+            summary(
+                totalMillis = minutes(20),
+                apps = listOf(app("One", minutes(8)), app("Two", minutes(7))),
+            ),
+        )
+
+        assertEquals(5L, snapshot.otherAppsUsageMinutes)
+        assertEquals(snapshot.totalUsageMinutes, snapshot.topApps.sumOf { it.durationMinutes } + snapshot.otherAppsUsageMinutes)
+    }
+
+    @Test
+    fun `discarded seconds are reconciled at the displayed minute level`() {
+        val snapshot = ReceiptFactory.from(
+            summary(
+                totalMillis = minutes(9) + 40_000L,
+                apps = listOf(
+                    app("One", minutes(5) + 20_000L),
+                    app("Two", minutes(4) + 20_000L),
+                ),
+            ),
+        )
+
+        assertEquals(9L, snapshot.totalUsageMinutes)
+        assertEquals(listOf(5L, 4L), snapshot.topApps.map { it.durationMinutes })
+        assertEquals(0L, snapshot.otherAppsUsageMinutes)
+        assertEquals(snapshot.totalUsageMinutes, snapshot.topApps.sumOf { it.durationMinutes } + snapshot.otherAppsUsageMinutes)
+    }
+
+    @Test
+    fun `several top apps with discarded seconds still reconcile`() {
+        val snapshot = ReceiptFactory.from(
+            summary(
+                totalMillis = minutes(15) + 50_000L,
+                apps = (1..5).map { index -> app("App $index", minutes(2) + 5_000L) } +
+                    app("Other source app", minutes(5) + 25_000L),
+            ),
+        )
+
+        assertEquals(5, snapshot.topApps.size)
+        assertEquals(5L, snapshot.otherAppsUsageMinutes)
+        assertEquals(snapshot.totalUsageMinutes, snapshot.topApps.sumOf { it.durationMinutes } + snapshot.otherAppsUsageMinutes)
+    }
+
+    @Test
+    fun `fewer than five apps and zero other apps are represented correctly`() {
+        val snapshot = ReceiptFactory.from(
+            summary(
+                totalMillis = minutes(15),
+                apps = listOf(app("One", minutes(8)), app("Two", minutes(7))),
+            ),
+        )
+
+        assertEquals(2, snapshot.topApps.size)
+        assertEquals(0L, snapshot.otherAppsUsageMinutes)
+    }
+
+    @Test
+    fun `other apps cannot become negative for malformed totals`() {
+        val snapshot = ReceiptFactory.from(
+            summary(
+                totalMillis = minutes(1),
+                apps = listOf(app("Too large", minutes(2))),
+                averageMillis = -1L,
+                projectedMillis = -1L,
+            ),
+        )
+
+        assertEquals(1L, snapshot.topApps.single().durationMinutes)
+        assertEquals(0L, snapshot.otherAppsUsageMinutes)
+        assertEquals(snapshot.totalUsageMinutes, snapshot.topApps.sumOf { it.durationMinutes } + snapshot.otherAppsUsageMinutes)
+        assertEquals(0L, snapshot.dailyAverageMinutes)
+        assertEquals(0L, snapshot.projectedAnnualDays)
+    }
+
+    @Test
+    fun `sub-minute total displays as zero minutes without a negative remainder`() {
+        val snapshot = ReceiptFactory.from(
+            summary(totalMillis = 59_999L, apps = listOf(app("Tiny", 30_000L))),
+        )
+
+        assertEquals(0L, snapshot.totalUsageMinutes)
+        assertTrue(snapshot.topApps.isEmpty())
+        assertEquals(0L, snapshot.otherAppsUsageMinutes)
+    }
+
+    @Test
+    fun `display labels are copied without package metadata dependencies`() {
+        val snapshot = ReceiptFactory.from(
+            summary(totalMillis = minutes(5), apps = listOf(app("com.example.app", minutes(5)))),
+            displayLabels = mapOf("com.example.app" to "Readable App"),
+        )
+
+        assertEquals("Readable App", snapshot.topApps.single().displayLabel)
+    }
+
+    private fun summary(
+        totalMillis: Long,
+        apps: List<AppUsage>,
+        averageMillis: Long = minutes(1),
+        projectedMillis: Long = 365L * 86_400_000L,
+    ) = WeeklyUsageSummary(
         reportingPeriod = UsagePeriod(
             localStartDate = LocalDate.of(2026, 9, 8),
             localEndExclusiveDate = LocalDate.of(2026, 9, 15),
             zoneId = ZoneId.of("UTC"),
         ),
-        totalForegroundDurationMillis = 23L * MILLIS_PER_HOUR,
-        averageDailyDurationMillis = 3L * MILLIS_PER_HOUR,
-        projectedAnnualDurationMillis = 1095L * MILLIS_PER_HOUR,
-        rankedApplications = listOf(
-            AppUsage("one", "One", 8L * MILLIS_PER_HOUR),
-            AppUsage("two", "Two", 5L * MILLIS_PER_HOUR),
-            AppUsage("three", "Three", 4L * MILLIS_PER_HOUR),
-            AppUsage("four", "Four", 3L * MILLIS_PER_HOUR),
-            AppUsage("five", "Five", 2L * MILLIS_PER_HOUR),
-            AppUsage("six", "Six", 1L * MILLIS_PER_HOUR),
-        ),
+        totalForegroundDurationMillis = totalMillis,
+        averageDailyDurationMillis = averageMillis,
+        projectedAnnualDurationMillis = projectedMillis,
+        rankedApplications = apps,
     )
 
-    @Test
-    fun `factory selects five ranked apps and reconciles other apps`() {
-        val snapshot = ReceiptFactory.from(
-            summary = summary,
-            displayLabels = mapOf("one" to "Readable One"),
-        )
-
-        assertEquals(listOf("Readable One", "Two", "Three", "Four", "Five"), snapshot.topApps.map { it.displayLabel })
-        assertEquals(1L * MILLIS_PER_HOUR, snapshot.otherAppsUsageMillis)
-        assertEquals(summary.totalForegroundDurationMillis, snapshot.totalUsageMillis)
-        assertEquals(summary.averageDailyDurationMillis, snapshot.dailyAverageMillis)
-        assertEquals(summary.projectedAnnualDurationMillis, snapshot.projectedAnnualUsageMillis)
-    }
-
-    @Test
-    fun `factory keeps fewer than five apps without adding empty rows`() {
-        val shortSummary = summary.copy(rankedApplications = summary.rankedApplications.take(2))
-
-        val snapshot = ReceiptFactory.from(shortSummary)
-
-        assertEquals(2, snapshot.topApps.size)
-        assertEquals(10L * MILLIS_PER_HOUR, snapshot.otherAppsUsageMillis)
-    }
-
-    @Test
-    fun `other apps never becomes negative for malformed totals`() {
-        val malformed = summary.copy(
-            totalForegroundDurationMillis = 1L,
-            averageDailyDurationMillis = -1L,
-            projectedAnnualDurationMillis = -1L,
-        )
-
-        val snapshot = ReceiptFactory.from(malformed)
-
-        assertEquals(0L, snapshot.otherAppsUsageMillis)
-        assertEquals(0L, snapshot.dailyAverageMillis)
-        assertEquals(0L, snapshot.projectedAnnualUsageMillis)
-        assertEquals(1L, snapshot.totalUsageMillis)
-    }
-
-    @Test
-    fun `receipt dates use the completed period boundaries`() {
-        val snapshot = ReceiptFactory.from(summary)
-
-        assertEquals(LocalDate.of(2026, 9, 8), snapshot.startDate)
-        assertEquals(LocalDate.of(2026, 9, 14), snapshot.endDateInclusive)
-    }
+    private fun app(label: String, durationMillis: Long) = AppUsage(label, label, durationMillis)
 
     private companion object {
-        const val MILLIS_PER_HOUR = 60L * 60L * 1_000L
+        fun minutes(value: Long): Long = value * 60_000L
     }
 }

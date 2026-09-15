@@ -74,6 +74,8 @@ UsageStats supplies package names and foreground durations, not guaranteed consu
 
 The receipt uses only display labels and durations from the current loaded report. `ReceiptSnapshot` excludes package identifiers and app icons. The Classic receipt is a fixed 1080×1920 text-oriented image containing the last seven completed days, top five apps, reconciled other-app usage, total, daily average, yearly pace, and `Made with ScrollBill`. It is rendered once and the same bitmap is shown in preview and encoded as PNG for sharing.
 
+Raw usage retains millisecond precision. For the public receipt, total and app durations are converted to displayed whole minutes using one consistent truncation rule. `OTHER APPS` is then calculated from displayed total minutes minus displayed top-five minutes, clamped defensively at zero, so the visible arithmetic always balances.
+
 Sharing is explicitly user initiated. The PNG is written to `cacheDir/shared_receipts/scrollbill-weekly-receipt.png`, exposed only through the non-exported FileProvider, and sent with `ACTION_SEND` as `image/png`. It is not saved to public storage or permanently persisted.
 
 Report totals mean ScrollBill's aggregated foreground application usage after excluding ScrollBill, the resolved HOME application, `android`, and `com.android.systemui`. This is a product-specific aggregation and should not be represented as guaranteed identical to Android Digital Wellbeing's proprietary calculation.

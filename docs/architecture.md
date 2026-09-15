@@ -39,7 +39,9 @@ Usage totals exclude ScrollBill, the dynamically resolved HOME package, `android
 
 ## Receipt boundary
 
-`ReceiptSnapshot` contains only the public image inputs: completed-period dates, durations, display labels, the top five entries, and reconciled `otherAppsUsageMillis`. It contains no package identifiers, Android framework objects, icons, contexts, or repositories. `ClassicReceiptRenderer` renders a 1080×1920 `ARGB_8888` Bitmap with Canvas; no Activity screenshot or device UI dimensions are involved. The preview displays that Bitmap directly, and the share path encodes the same instance as PNG.
+`ReceiptSnapshot` contains only the public image inputs: completed-period dates, whole-minute durations, display labels, the top five entries, and reconciled `otherAppsUsageMinutes`. It contains no package identifiers, Android framework objects, icons, contexts, or repositories. `ClassicReceiptRenderer` renders a 1080×1920 `ARGB_8888` Bitmap with Canvas; no Activity screenshot or device UI dimensions are involved. The preview displays that Bitmap directly, and the share path encodes the same instance as PNG.
+
+The source report retains raw millisecond precision. `ReceiptFactory` converts receipt total and app durations to whole-minute presentation values using truncation, then derives `otherAppsUsageMinutes` from displayed total minutes minus displayed top-five minutes. This prevents discarded seconds from making visible receipt arithmetic disagree; the underlying UsageStats summary is not changed.
 
 The cache writer uses only `cacheDir/shared_receipts/scrollbill-weekly-receipt.png`. FileProvider exposes only the `shared_receipts/` cache path, is non-exported, and grants read access only through the user-triggered share Intent. A later generation overwrites the one ScrollBill receipt file rather than accumulating history.
 

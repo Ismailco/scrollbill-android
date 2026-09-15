@@ -25,6 +25,16 @@ class ClassicReceiptRenderer : ReceiptRenderer {
             RECEIPT_RADIUS,
             Paint(Paint.ANTI_ALIAS_FLAG).apply { color = Color.WHITE },
         )
+        canvas.drawRoundRect(
+            RectF(RECEIPT_LEFT, RECEIPT_TOP, RECEIPT_RIGHT, RECEIPT_BOTTOM),
+            RECEIPT_RADIUS,
+            RECEIPT_RADIUS,
+            Paint(Paint.ANTI_ALIAS_FLAG).apply {
+                color = 0xFFE1E1E1.toInt()
+                style = Paint.Style.STROKE
+                strokeWidth = 3f
+            },
+        )
 
         val headingPaint = paint(
             color = INK_COLOR,
@@ -56,44 +66,71 @@ class ClassicReceiptRenderer : ReceiptRenderer {
             textSize = 27f,
             typeface = Typeface.create("monospace", Typeface.BOLD),
         )
+        val summaryValuePaint = paint(
+            color = INK_COLOR,
+            textSize = 34f,
+            typeface = Typeface.create("monospace", Typeface.BOLD),
+        )
         val footerPaint = paint(
             color = MUTED_INK_COLOR,
             textSize = 24f,
             typeface = Typeface.create("monospace", Typeface.NORMAL),
         )
 
-        canvas.drawText("SCROLLBILL", CONTENT_LEFT, 154f, headingPaint)
-        canvas.drawText("WEEKLY PHONE RECEIPT", CONTENT_LEFT, 198f, monoHeadingPaint)
+        canvas.drawRect(CONTENT_LEFT, 110f, CONTENT_LEFT + 54f, 118f, paintFill(ACCENT_COLOR))
+        canvas.drawText("SCROLLBILL", CONTENT_LEFT, 166f, headingPaint)
+        canvas.drawText("WEEKLY PHONE RECEIPT", CONTENT_LEFT, 214f, monoHeadingPaint)
         canvas.drawText(
             formatReceiptDateRange(snapshot.startDate, snapshot.endDateInclusive),
             CONTENT_LEFT,
-            244f,
+            264f,
             monoHeadingPaint,
         )
-        drawDivider(canvas, 286f)
+        drawDivider(canvas, 310f)
 
-        canvas.drawText(formatReceiptDuration(snapshot.totalUsageMillis), CONTENT_LEFT, 406f, heroPaint)
-        canvas.drawText("TOTAL WEEKLY APP TIME", CONTENT_LEFT, 450f, heroLabelPaint)
-        drawDivider(canvas, 510f)
+        canvas.drawText(formatReceiptDuration(snapshot.totalUsageMinutes), CONTENT_LEFT, 446f, heroPaint)
+        canvas.drawText("TOTAL APP TIME THIS WEEK", CONTENT_LEFT, 492f, heroLabelPaint)
+        drawDivider(canvas, 556f)
 
-        canvas.drawText("APP TIME", CONTENT_LEFT, 590f, sectionPaint)
-        val rows = snapshot.topApps.map { it.displayLabel to it.durationMillis }.toMutableList()
-        if (snapshot.otherAppsUsageMillis > 0L) {
-            rows += "OTHER APPS" to snapshot.otherAppsUsageMillis
+        canvas.drawText("APP TIME", CONTENT_LEFT, 650f, sectionPaint)
+        val rows = snapshot.topApps.map { it.displayLabel to it.durationMinutes }.toMutableList()
+        if (snapshot.otherAppsUsageMinutes > 0L) {
+            rows += "OTHER APPS" to snapshot.otherAppsUsageMinutes
         }
         rows.forEachIndexed { index, row ->
-            drawReceiptRow(canvas, row.first, row.second, 665f + index * ROW_HEIGHT, monoPaint)
+            drawReceiptRow(canvas, row.first, row.second, 724f + index * ROW_HEIGHT, monoPaint)
         }
 
-        val summaryDividerY = 665f + rows.size * ROW_HEIGHT + 35f
+        val summaryDividerY = 724f + rows.size * ROW_HEIGHT + 36f
         drawDivider(canvas, summaryDividerY)
-        drawSummaryLine(canvas, "TOTAL", formatReceiptDuration(snapshot.totalUsageMillis), summaryDividerY + 86f, monoPaint)
-        drawSummaryLine(canvas, "DAILY AVERAGE", formatReceiptDuration(snapshot.dailyAverageMillis), summaryDividerY + 148f, monoPaint)
-        drawSummaryLine(canvas, "YEARLY PACE", formatYearlyPace(snapshot.projectedAnnualUsageMillis), summaryDividerY + 210f, monoPaint)
+        drawSummaryLine(
+            canvas,
+            "TOTAL",
+            formatReceiptDuration(snapshot.totalUsageMinutes),
+            summaryDividerY + 92f,
+            sectionPaint,
+            summaryValuePaint,
+        )
+        drawSummaryLine(
+            canvas,
+            "DAILY AVERAGE",
+            formatReceiptDuration(snapshot.dailyAverageMinutes),
+            summaryDividerY + 164f,
+            monoPaint,
+            monoPaint,
+        )
+        drawSummaryLine(
+            canvas,
+            "YEARLY PACE",
+            formatYearlyPace(snapshot.projectedAnnualDays),
+            summaryDividerY + 236f,
+            monoPaint,
+            monoPaint,
+        )
 
-        drawDivider(canvas, summaryDividerY + 275f)
-        canvas.drawText("TIME IS NON-REFUNDABLE.", CONTENT_LEFT, summaryDividerY + 365f, sectionPaint)
-        canvas.drawText("Made with ScrollBill", CONTENT_LEFT, summaryDividerY + 445f, footerPaint)
+        drawDivider(canvas, FOOTER_DIVIDER_Y)
+        canvas.drawText("TIME IS NON-REFUNDABLE.", CONTENT_LEFT, 1_606f, sectionPaint)
+        canvas.drawText("Made with ScrollBill", CONTENT_LEFT, 1_724f, footerPaint)
 
         return bitmap
     }
@@ -101,15 +138,19 @@ class ClassicReceiptRenderer : ReceiptRenderer {
     private fun drawReceiptRow(
         canvas: Canvas,
         label: String,
-        durationMillis: Long,
+        durationMinutes: Long,
         baseline: Float,
         textPaint: Paint,
     ) {
-        val duration = formatReceiptDuration(durationMillis)
+        val duration = formatReceiptDuration(durationMinutes)
         val durationWidth = textPaint.measureText(duration)
         val durationX = CONTENT_RIGHT
         val maxLabelWidth = durationX - durationWidth - LABEL_DURATION_GAP
-        val fittedLabel = ellipsizeToWidth(label.uppercase(Locale.US), textPaint, maxLabelWidth)
+        val fittedLabel = ellipsizeToWidth(
+            text = label.uppercase(Locale.US),
+            maxWidth = maxLabelWidth,
+            measureText = textPaint::measureText,
+        )
         canvas.drawText(fittedLabel, CONTENT_LEFT, baseline, textPaint)
         textPaint.textAlign = Paint.Align.RIGHT
         canvas.drawText(duration, durationX, baseline, textPaint)
@@ -121,12 +162,13 @@ class ClassicReceiptRenderer : ReceiptRenderer {
         label: String,
         value: String,
         baseline: Float,
-        textPaint: Paint,
+        labelPaint: Paint,
+        valuePaint: Paint,
     ) {
-        canvas.drawText(label, CONTENT_LEFT, baseline, textPaint)
-        textPaint.textAlign = Paint.Align.RIGHT
-        canvas.drawText(value, CONTENT_RIGHT, baseline, textPaint)
-        textPaint.textAlign = Paint.Align.LEFT
+        canvas.drawText(label, CONTENT_LEFT, baseline, labelPaint)
+        valuePaint.textAlign = Paint.Align.RIGHT
+        canvas.drawText(value, CONTENT_RIGHT, baseline, valuePaint)
+        valuePaint.textAlign = Paint.Align.LEFT
     }
 
     private fun drawDivider(canvas: Canvas, y: Float) {
@@ -146,6 +188,8 @@ class ClassicReceiptRenderer : ReceiptRenderer {
             isSubpixelText = true
         }
 
+    private fun paintFill(color: Int): Paint = Paint(Paint.ANTI_ALIAS_FLAG).apply { this.color = color }
+
     companion object {
         const val CANVAS_WIDTH = 1_080
         const val CANVAS_HEIGHT = 1_920
@@ -163,21 +207,7 @@ class ClassicReceiptRenderer : ReceiptRenderer {
         private const val CONTENT_RIGHT = 958f
         private const val RECEIPT_RADIUS = 18f
         private const val LABEL_DURATION_GAP = 32f
-        private const val ROW_HEIGHT = 64f
+        private const val ROW_HEIGHT = 78f
+        private const val FOOTER_DIVIDER_Y = 1_500f
     }
-}
-
-private fun ellipsizeToWidth(text: String, paint: Paint, maxWidth: Float): String {
-    if (maxWidth <= 0f) return ""
-    if (paint.measureText(text) <= maxWidth) return text
-
-    val ellipsis = "…"
-    val availableWidth = maxWidth - paint.measureText(ellipsis)
-    if (availableWidth <= 0f) return ellipsis
-
-    var end = text.length
-    while (end > 0 && paint.measureText(text, 0, end) > availableWidth) {
-        end--
-    }
-    return text.substring(0, end).trimEnd() + ellipsis
 }

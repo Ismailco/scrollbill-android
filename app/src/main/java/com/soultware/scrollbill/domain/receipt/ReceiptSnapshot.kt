@@ -5,14 +5,14 @@ import java.time.LocalDate
 data class ReceiptSnapshot(
     val startDate: LocalDate,
     val endDateInclusive: LocalDate,
-    val totalUsageMillis: Long,
-    val dailyAverageMillis: Long,
-    val projectedAnnualUsageMillis: Long,
+    val totalUsageMinutes: Long,
+    val dailyAverageMinutes: Long,
+    val projectedAnnualDays: Long,
     val topApps: List<ReceiptAppEntry>,
-    val otherAppsUsageMillis: Long,
+    val otherAppsUsageMinutes: Long,
 )
 
 data class ReceiptAppEntry(
     val displayLabel: String,
-    val durationMillis: Long,
+    val durationMinutes: Long,
 )
