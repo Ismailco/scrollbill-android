@@ -10,7 +10,7 @@ Phase 0 proves the Android usage foundation only:
 - queries real `UsageStatsManager` data
 - summarizes the last seven completed local calendar days
 - shows totals, daily average, projected annual use, and ranked apps in Compose
-- resolves launchable app labels/icons through `LauncherApps` when available
+- resolves launchable app labels/icons through an in-memory launcher metadata index
 - excludes the current HOME app and justified Android infrastructure from totals and rankings
 - keeps usage data on the device
 
@@ -59,9 +59,9 @@ The platform may return an empty report on a new emulator or device. That is sho
 
 ## Privacy and permissions
 
-The source app manifest explicitly declares only `android.permission.PACKAGE_USAGE_STATS`. AndroidX adds its internal signature-protected dynamic-receiver permission to the merged manifest; it is not a user-granted capability and is unrelated to usage data. Usage history is queried locally and is never uploaded, logged as individual records, persisted in a database, or sent to a service. The app intentionally does not request `QUERY_ALL_PACKAGES` and falls back to package names or a neutral icon when package metadata is not visible or cannot be resolved.
+The source app manifest explicitly declares only `android.permission.PACKAGE_USAGE_STATS` and a narrow launcher-intent `<queries>` declaration. AndroidX adds its internal signature-protected dynamic-receiver permission to the merged manifest; it is not a user-granted capability and is unrelated to usage data. Usage history is queried locally and is never uploaded, logged as individual records, persisted in a database, or sent to a service. The app intentionally does not request `QUERY_ALL_PACKAGES` and falls back to package names or a neutral icon when package metadata is not visible or cannot be resolved.
 
-UsageStats supplies package names and foreground durations, not guaranteed consumer-facing labels or icons. ScrollBill first asks `LauncherApps` for the current user's launchable activity metadata, then uses permitted `PackageManager` metadata, then falls back to the package name and a neutral icon. No `<queries>` declaration is used.
+UsageStats supplies package names and foreground durations, not guaranteed consumer-facing labels or icons. Android package visibility can limit metadata discovery, so ScrollBill declares visibility only for applications exposing the ordinary `ACTION_MAIN` + `CATEGORY_LAUNCHER` intent. It builds a package-keyed launcher metadata index in memory with `PackageManager.queryIntentActivities()` for the current user, then tries `LauncherApps`, permitted direct `PackageManager` metadata, and finally the package name plus a neutral icon. No individual package names or broad package inventory visibility are declared.
 
 Report totals mean ScrollBill's aggregated foreground application usage after excluding ScrollBill, the resolved HOME application, `android`, and `com.android.systemui`. This is a product-specific aggregation and should not be represented as guaranteed identical to Android Digital Wellbeing's proprietary calculation.
 

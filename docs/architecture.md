@@ -6,7 +6,7 @@ The single `app` module uses a small separation of concerns:
 
 - `domain/model`: `UsagePeriod`, `AppUsage`, and `WeeklyUsageSummary` contain framework-free reporting data.
 - `domain/usage`: `UsageAggregator` filters, groups, ranks, and calculates summary values from plain records.
-- `data/usage`: Android AppOps access checking, `UsageStatsManager` queries, LauncherApps-first metadata resolution, and dynamic HOME exclusion resolution.
+- `data/usage`: Android AppOps access checking, `UsageStatsManager` queries, launcher metadata indexing/resolution, and dynamic HOME exclusion resolution.
 - `ui`: a `ScrollBillViewModel` exposes a typed `StateFlow`; Compose renders access, loading, empty, error, and dashboard states.
 - `ui/theme`: Material 3 light/dark color schemes.
 
@@ -28,10 +28,10 @@ The primary period is `[today - 7 days at local date, today at local date)`. Eac
 
 Usage data stays in process on the device. There is no network permission, client, backend, database, analytics, telemetry, or production logging of package durations. The only user-facing special access is `PACKAGE_USAGE_STATS`; AndroidX's internal dynamic-receiver signature permission may also appear in the merged manifest.
 
-LauncherApps is queried for `Process.myUserHandle()` only. Its launchable activity list is sorted by activity class name so multiple launcher activities produce one deterministic application metadata result. PackageManager is the permitted fallback, followed by package-name and neutral-icon fallbacks.
+The manifest declares one narrow package-visibility query for `ACTION_MAIN` + `CATEGORY_LAUNCHER`. The metadata resolver uses `PackageManager.queryIntentActivities()` to build an in-memory, package-keyed index of ordinary launchable applications for the current user. Multiple launcher activities are sorted by activity class name and collapse to one deterministic application metadata result. `LauncherApps` is then used as a current-user supplemental source, followed by permitted direct `PackageManager` lookup, package-name fallback, and neutral-icon fallback. The launcher inventory is never persisted.
 
 Usage totals exclude ScrollBill, the dynamically resolved HOME package, `android`, and `com.android.systemui`. The exclusion policy is deliberately conservative: preinstalled/system status alone is not a reason to exclude a user-facing application. These totals are ScrollBill's aggregation and are not guaranteed to match Digital Wellbeing.
 
 ## Why no backend and no broad package visibility
 
-Phase 0 needs only local system data and local calculation, so a backend would add privacy and operational cost without providing a required capability. `QUERY_ALL_PACKAGES` and manifest `<queries>` visibility expansion are intentionally avoided because app inventory and metadata can be sensitive. LauncherApps covers the ordinary current user's launchable applications; if neither local metadata mechanism resolves a recorded package, ScrollBill uses its package name and a neutral icon.
+Phase 0 needs only local system data and local calculation, so a backend would add privacy and operational cost without providing a required capability. App inventory and metadata can be sensitive, so the manifest uses only the minimum launcher-intent `<queries>` visibility needed for consumer-facing metadata. `QUERY_ALL_PACKAGES` is not requested, and individual application packages are not enumerated. Non-launchable or otherwise unresolved UsageStats packages still use their package name and a neutral icon.

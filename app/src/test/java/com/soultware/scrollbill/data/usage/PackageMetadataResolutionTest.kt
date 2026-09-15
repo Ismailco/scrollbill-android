@@ -6,23 +6,24 @@ import org.junit.Test
 
 class PackageMetadataResolutionTest {
     @Test
-    fun `launcher metadata is preferred over package manager metadata`() {
+    fun `launcher index metadata is preferred over later metadata sources`() {
         val selected = mergeMetadataCandidates(
-            packageName = "com.example.video",
-            launcher = MetadataCandidate(label = "Video", icon = "launcher-icon"),
-            packageManager = MetadataCandidate(label = "Package video", icon = "package-icon"),
+            "com.example.video",
+            MetadataCandidate(label = "Indexed video", icon = "indexed-icon"),
+            MetadataCandidate(label = "Launcher video", icon = "launcher-icon"),
+            MetadataCandidate(label = "Package video", icon = "package-icon"),
         )
 
-        assertEquals("Video", selected.label)
-        assertEquals("launcher-icon", selected.icon)
+        assertEquals("Indexed video", selected.label)
+        assertEquals("indexed-icon", selected.icon)
     }
 
     @Test
     fun `package manager fills an unavailable launcher field`() {
         val selected = mergeMetadataCandidates(
-            packageName = "com.example.mail",
-            launcher = MetadataCandidate(label = "Mail", icon = null),
-            packageManager = MetadataCandidate(label = "Package mail", icon = "package-icon"),
+            "com.example.mail",
+            MetadataCandidate(label = "Mail", icon = null),
+            MetadataCandidate(label = "Package mail", icon = "package-icon"),
         )
 
         assertEquals("Mail", selected.label)
@@ -32,9 +33,9 @@ class PackageMetadataResolutionTest {
     @Test
     fun `package name and neutral icon state are used when metadata is unavailable`() {
         val selected = mergeMetadataCandidates<String>(
-            packageName = "com.example.unknown",
-            launcher = null,
-            packageManager = null,
+            "com.example.unknown",
+            null,
+            null,
         )
 
         assertEquals("com.example.unknown", selected.label)
@@ -45,12 +46,48 @@ class PackageMetadataResolutionTest {
     fun `multiple launcher activities select one deterministically without duplicates`() {
         val selected = selectLauncherMetadata(
             listOf(
-                LauncherMetadataEntry("com.example.SecondActivity", MetadataCandidate("Second", "second")),
-                LauncherMetadataEntry("com.example.FirstActivity", MetadataCandidate("First", "first")),
+                LauncherMetadataEntry(
+                    packageName = "com.example.video",
+                    activityClassName = "com.example.SecondActivity",
+                    metadata = MetadataCandidate("Second", "second"),
+                ),
+                LauncherMetadataEntry(
+                    packageName = "com.example.video",
+                    activityClassName = "com.example.FirstActivity",
+                    metadata = MetadataCandidate("First", "first"),
+                ),
             ),
         )
 
         assertEquals("First", selected?.label)
         assertEquals("first", selected?.icon)
+    }
+
+    @Test
+    fun `launcher metadata index has one entry per package`() {
+        val index = buildLauncherMetadataIndex(
+            listOf(
+                LauncherMetadataEntry(
+                    packageName = "com.example.video",
+                    activityClassName = "com.example.video.SecondActivity",
+                    metadata = MetadataCandidate("Second", "second-icon"),
+                ),
+                LauncherMetadataEntry(
+                    packageName = "com.example.mail",
+                    activityClassName = "com.example.mail.MainActivity",
+                    metadata = MetadataCandidate("Mail", "mail-icon"),
+                ),
+                LauncherMetadataEntry(
+                    packageName = "com.example.video",
+                    activityClassName = "com.example.video.FirstActivity",
+                    metadata = MetadataCandidate("Video", "video-icon"),
+                ),
+            ),
+        )
+
+        assertEquals(setOf("com.example.video", "com.example.mail"), index.keys)
+        assertEquals("Video", index["com.example.video"]?.label)
+        assertEquals("video-icon", index["com.example.video"]?.icon)
+        assertEquals("Mail", index["com.example.mail"]?.label)
     }
 }
