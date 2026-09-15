@@ -65,11 +65,13 @@ class MainActivity : ComponentActivity() {
         val usageAccessIntent = Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS)
         try {
             startActivity(usageAccessIntent)
+            viewModel.onUsageAccessSettingsOpened()
         } catch (_: ActivityNotFoundException) {
             try {
                 startActivity(Intent(Settings.ACTION_SETTINGS))
+                viewModel.onUsageAccessSettingsOpened()
             } catch (_: ActivityNotFoundException) {
-                viewModel.onAppResumed()
+                viewModel.onUsageAccessSettingsUnavailable()
             }
         }
     }

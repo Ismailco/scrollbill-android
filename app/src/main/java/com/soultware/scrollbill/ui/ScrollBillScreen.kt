@@ -2,6 +2,7 @@ package com.soultware.scrollbill.ui
 
 import android.graphics.Bitmap
 import android.net.Uri
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -20,6 +21,7 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
@@ -40,6 +42,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.painter.BitmapPainter
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
@@ -64,6 +67,12 @@ fun ScrollBillApp(
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val screen by viewModel.screen.collectAsStateWithLifecycle()
     val receiptState by viewModel.receiptState.collectAsStateWithLifecycle()
+    val usageAccessGranted by viewModel.usageAccessGranted.collectAsStateWithLifecycle()
+    val usageAccessSettingsError by viewModel.usageAccessSettingsError.collectAsStateWithLifecycle()
+
+    if (screen == ScrollBillScreen.Settings || screen == ScrollBillScreen.Privacy) {
+        BackHandler(onBack = viewModel::closeInfoScreen)
+    }
 
     LaunchedEffect(receiptState) {
         val shareReady = receiptState as? ReceiptPreviewUiState.ShareReady ?: return@LaunchedEffect
@@ -82,7 +91,10 @@ fun ScrollBillApp(
                         showRefresh = state is ScrollBillUiState.Loaded ||
                             state is ScrollBillUiState.NoUsageData ||
                             state is ScrollBillUiState.RecoverableError,
+                        showSettings = state !is ScrollBillUiState.CheckingPermission &&
+                            state !is ScrollBillUiState.UsageAccessRequired,
                         onRefresh = viewModel::refresh,
+                        onSettings = viewModel::openSettings,
                     )
                 },
             ) { paddingValues ->
@@ -91,6 +103,7 @@ fun ScrollBillApp(
                     ScrollBillUiState.UsageAccessRequired -> AccessRequiredState(
                         modifier = Modifier.padding(paddingValues),
                         onGrantUsageAccess = onGrantUsageAccess,
+                        settingsError = usageAccessSettingsError,
                     )
                     ScrollBillUiState.Loading -> LoadingState(Modifier.padding(paddingValues))
                     is ScrollBillUiState.Loaded -> DashboardState(
@@ -115,17 +128,29 @@ fun ScrollBillApp(
                 onShare = viewModel::shareReceipt,
                 onRetry = viewModel::retryReceipt,
             )
+            ScrollBillScreen.Settings -> SettingsScreen(
+                usageAccessGranted = usageAccessGranted,
+                onBack = viewModel::closeInfoScreen,
+                onOpenPrivacy = viewModel::openPrivacy,
+                onOpenUsageAccess = onGrantUsageAccess,
+            )
+            ScrollBillScreen.Privacy -> PrivacyScreen(onBack = viewModel::closeInfoScreen)
         }
     }
 }
 
 @Composable
 @OptIn(ExperimentalMaterial3Api::class)
-private fun ScrollBillTopBar(showRefresh: Boolean, onRefresh: () -> Unit) {
+private fun ScrollBillTopBar(
+    showRefresh: Boolean,
+    showSettings: Boolean,
+    onRefresh: () -> Unit,
+    onSettings: () -> Unit,
+) {
     TopAppBar(
         title = {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                AppMark()
+                AppMark(Modifier.size(32.dp))
                 Spacer(Modifier.width(10.dp))
                 Text("ScrollBill", fontWeight = FontWeight.SemiBold)
             }
@@ -136,6 +161,11 @@ private fun ScrollBillTopBar(showRefresh: Boolean, onRefresh: () -> Unit) {
                     Icon(Icons.Default.Refresh, contentDescription = "Refresh report")
                 }
             }
+            if (showSettings) {
+                IconButton(onClick = onSettings) {
+                    Icon(Icons.Default.Settings, contentDescription = "Settings")
+                }
+            }
         },
         colors = TopAppBarDefaults.topAppBarColors(
             containerColor = MaterialTheme.colorScheme.surface,
@@ -144,50 +174,88 @@ private fun ScrollBillTopBar(showRefresh: Boolean, onRefresh: () -> Unit) {
 }
 
 @Composable
-private fun AppMark() {
-    Surface(
-        modifier = Modifier.size(32.dp),
-        shape = RoundedCornerShape(9.dp),
-        color = MaterialTheme.colorScheme.primary,
+private fun AppMark(modifier: Modifier = Modifier) {
+    Image(
+        painter = painterResource(com.soultware.scrollbill.R.drawable.ic_scrollbill),
+        contentDescription = null,
+        modifier = modifier,
+    )
+}
+
+@Composable
+private fun AccessRequiredState(
+    modifier: Modifier,
+    onGrantUsageAccess: () -> Unit,
+    settingsError: Boolean,
+) {
+    LazyColumn(
+        modifier = modifier.fillMaxSize(),
+        contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 24.dp, vertical = 32.dp),
+        verticalArrangement = Arrangement.spacedBy(18.dp),
     ) {
-        Box(contentAlignment = Alignment.Center) {
-            Text(
-                text = "SB",
-                color = MaterialTheme.colorScheme.onPrimary,
-                style = MaterialTheme.typography.labelSmall,
-                fontWeight = FontWeight.Bold,
-            )
+        item {
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                AppMark(Modifier.size(64.dp))
+                Text("See where your time went.", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
+                Text(
+                    "ScrollBill reads Android's Usage Access history to create a private weekly report and shareable receipt.",
+                    style = MaterialTheme.typography.bodyLarge,
+                )
+            }
+        }
+        item {
+            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                AccessBenefit("See your last 7 completed days")
+                AccessBenefit("Understand which apps took the most time")
+                AccessBenefit("Create a shareable weekly receipt")
+            }
+        }
+        item {
+            Surface(
+                color = MaterialTheme.colorScheme.secondaryContainer,
+                shape = MaterialTheme.shapes.medium,
+            ) {
+                Text(
+                    "Your usage data stays on this device.",
+                    modifier = Modifier.padding(16.dp),
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.SemiBold,
+                )
+            }
+        }
+        item {
+            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                Button(
+                    onClick = onGrantUsageAccess,
+                    modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp),
+                ) {
+                    Text("Grant usage access")
+                }
+                Text(
+                    "Android will open a system settings screen. ScrollBill cannot read your usage history until access is enabled.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                if (settingsError) {
+                    Text(
+                        "Android settings could not be opened. Try again.",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.error,
+                    )
+                }
+            }
         }
     }
 }
 
 @Composable
-private fun AccessRequiredState(modifier: Modifier, onGrantUsageAccess: () -> Unit) {
-    Column(
-        modifier = modifier
-            .fillMaxSize()
-            .padding(horizontal = 24.dp, vertical = 40.dp),
-        verticalArrangement = Arrangement.Center,
-    ) {
-        Text("See where your time went.", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
-        Spacer(Modifier.height(16.dp))
+private fun AccessBenefit(text: String) {
+    Card {
         Text(
-            "ScrollBill uses Android's Usage Access to calculate a screen-time report from the apps you use.",
+            text = text,
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 14.dp),
             style = MaterialTheme.typography.bodyLarge,
         )
-        Spacer(Modifier.height(12.dp))
-        Text(
-            "Your usage data stays on this device. ScrollBill does not upload your usage history.",
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
-        Spacer(Modifier.height(28.dp))
-        Button(
-            onClick = onGrantUsageAccess,
-            modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp),
-        ) {
-            Text("Grant usage access")
-        }
     }
 }
 
@@ -389,7 +457,13 @@ private fun formatDateRange(period: UsagePeriod): String {
 @Preview(showBackground = true)
 @Composable
 private fun AccessRequiredPreview() {
-    ScrollBillTheme { AccessRequiredState(Modifier.fillMaxSize(), onGrantUsageAccess = {}) }
+    ScrollBillTheme {
+        AccessRequiredState(
+            modifier = Modifier.fillMaxSize(),
+            onGrantUsageAccess = {},
+            settingsError = false,
+        )
+    }
 }
 
 @Preview(showBackground = true)

@@ -6,6 +6,7 @@ import android.graphics.Color
 import android.graphics.Paint
 import android.graphics.RectF
 import android.graphics.Typeface
+import androidx.core.graphics.createBitmap
 import com.soultware.scrollbill.domain.receipt.ReceiptSnapshot
 import java.util.Locale
 
@@ -15,7 +16,7 @@ fun interface ReceiptRenderer {
 
 class ClassicReceiptRenderer : ReceiptRenderer {
     override fun render(snapshot: ReceiptSnapshot): Bitmap {
-        val bitmap = Bitmap.createBitmap(CANVAS_WIDTH, CANVAS_HEIGHT, Bitmap.Config.ARGB_8888)
+        val bitmap = createBitmap(CANVAS_WIDTH, CANVAS_HEIGHT, Bitmap.Config.ARGB_8888)
         val canvas = Canvas(bitmap)
 
         canvas.drawColor(BACKGROUND_COLOR)

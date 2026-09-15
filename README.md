@@ -2,9 +2,9 @@
 
 ScrollBill is a privacy-first Android app that turns real Android app-usage statistics into an understandable screen-time summary.
 
-## Current Phase 1 scope
+## Current Phase 2 scope
 
-Phase 1 adds the first shareable product experience on top of the verified Phase 0 foundation:
+The beta-readiness phase builds on the verified usage and receipt foundation:
 
 - requests and re-checks Android Usage Access
 - queries real `UsageStatsManager` data
@@ -15,11 +15,15 @@ Phase 1 adds the first shareable product experience on top of the verified Phase
 - creates a frozen receipt snapshot from the current seven-day report
 - renders one deterministic Classic receipt at 1080×1920 as PNG
 - previews that exact rendered bitmap in-app and shares it through the Android Sharesheet
+- explains Usage Access in a focused first-run screen
+- provides Settings/About and an in-app privacy explanation
+- includes a receipt-inspired adaptive and monochrome launcher identity
+- prepares factual privacy, Play Store, and release documentation
 - keeps usage data on the device
 
 The receipt currently supports the last seven completed local calendar days only.
 
-There is no monetization, account, analytics, backend, networking, permanent receipt storage, or additional report period in this phase.
+There is no monetization, account, analytics, backend, networking, permanent receipt storage, or additional report period in this phase. The receipt remains limited to the last seven completed local calendar days.
 
 ## Requirements
 
@@ -40,9 +44,13 @@ From this directory:
 ./gradlew test
 ./gradlew lint
 ./gradlew assembleDebug
+./gradlew assembleRelease
+./gradlew bundleRelease
 ```
 
 Install the debug APK from `app/build/outputs/apk/debug/app-debug.apk` using Android Studio or `adb`.
+
+Release builds are locally generated and not production-signed by this repository. Configure an upload keystore through secure Gradle properties or CI secrets before a Play upload; never commit the keystore or its passwords. The local release artifacts are `app/build/outputs/apk/release/app-release-unsigned.apk` and `app/build/outputs/bundle/release/app-release.aab`.
 
 ## How Usage Access works
 
@@ -51,7 +59,7 @@ Install the debug APK from `app/build/outputs/apk/debug/app-debug.apk` using And
 ## Manual device test
 
 1. Install and open the app without Usage Access.
-2. Verify the focused access screen.
+2. Verify the focused first-run explanation and three benefits.
 3. Tap **Grant usage access**.
 4. Grant ScrollBill access in Android Settings.
 5. Return to the app and verify that real usage appears when history is available.
@@ -63,6 +71,9 @@ Install the debug APK from `app/build/outputs/apk/debug/app-debug.apk` using And
 11. Verify the preview shows the weekly receipt and tap **Share receipt**.
 12. Choose a target in the Android Sharesheet and verify it receives a PNG image.
 13. Return to ScrollBill and verify the dashboard report remains available.
+14. Open Settings and verify the version, Usage Access status, privacy row, and on-device privacy message.
+15. Open Privacy and verify the local-processing and explicit-sharing explanation.
+16. Use Back to return to the dashboard, then relaunch the app.
 
 The platform may return an empty report on a new emulator or device. That is shown as an empty state, not fabricated data.
 
@@ -71,6 +82,8 @@ The platform may return an empty report on a new emulator or device. That is sho
 The source app manifest explicitly declares only `android.permission.PACKAGE_USAGE_STATS` and a narrow launcher-intent `<queries>` declaration. AndroidX adds its internal signature-protected dynamic-receiver permission to the merged manifest; it is not a user-granted capability and is unrelated to usage data. Usage history is queried locally and is never uploaded, logged as individual records, persisted in a database, or sent to a service. The app intentionally does not request `QUERY_ALL_PACKAGES` and falls back to package names or a neutral icon when package metadata is not visible or cannot be resolved.
 
 UsageStats supplies package names and foreground durations, not guaranteed consumer-facing labels or icons. Android package visibility can limit metadata discovery, so ScrollBill declares visibility only for applications exposing the ordinary `ACTION_MAIN` + `CATEGORY_LAUNCHER` intent. It builds a package-keyed launcher metadata index in memory with `PackageManager.queryIntentActivities()` for the current user, then tries `LauncherApps`, permitted direct `PackageManager` metadata, and finally the package name plus a neutral icon. No individual package names or broad package inventory visibility are declared.
+
+The in-app Privacy screen and the draft at `docs/privacy-policy.md` describe the same current behavior: local report calculation, temporary cache-only receipt handling, and sharing only after an explicit user action. No installed-app inventory or usage history is persisted in a database.
 
 The receipt uses only display labels and durations from the current loaded report. `ReceiptSnapshot` excludes package identifiers and app icons. The Classic receipt is a fixed 1080×1920 text-oriented image containing the last seven completed days, top five apps, reconciled other-app usage, total, daily average, yearly pace, and `Made with ScrollBill`. It is rendered once and the same bitmap is shown in preview and encoded as PNG for sharing.
 
@@ -88,6 +101,10 @@ There is no Internet permission, backend, API client, analytics, telemetry, cras
 - App labels and icons may be unavailable because package visibility is intentionally narrow or an app was uninstalled.
 - `UsageStatsManager` data is system-provided and can vary by Android version and device vendor.
 - The annual value is a projection of the selected seven-day average, not a prediction.
+
+## Versioning
+
+The beta application ID is `com.soultware.scrollbill`, with `versionCode 1` and `versionName 0.1.0`. Beta development follows `0.x.y`; every future Play upload must increase `versionCode`.
 
 ## Future work
 

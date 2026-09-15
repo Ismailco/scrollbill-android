@@ -43,6 +43,8 @@ sealed interface ScrollBillUiState {
 sealed interface ScrollBillScreen {
     data object Dashboard : ScrollBillScreen
     data object ReceiptPreview : ScrollBillScreen
+    data object Settings : ScrollBillScreen
+    data object Privacy : ScrollBillScreen
 }
 
 sealed interface ReceiptPreviewUiState {
@@ -97,6 +99,10 @@ class ScrollBillViewModel(
     val uiState: StateFlow<ScrollBillUiState> = _uiState.asStateFlow()
     private val _screen = MutableStateFlow<ScrollBillScreen>(ScrollBillScreen.Dashboard)
     val screen: StateFlow<ScrollBillScreen> = _screen.asStateFlow()
+    private val _usageAccessGranted = MutableStateFlow(false)
+    val usageAccessGranted: StateFlow<Boolean> = _usageAccessGranted.asStateFlow()
+    private val _usageAccessSettingsError = MutableStateFlow(false)
+    val usageAccessSettingsError: StateFlow<Boolean> = _usageAccessSettingsError.asStateFlow()
     private val _receiptState = MutableStateFlow<ReceiptPreviewUiState>(ReceiptPreviewUiState.Idle)
     val receiptState: StateFlow<ReceiptPreviewUiState> = _receiptState.asStateFlow()
     private var refreshJob: Job? = null
@@ -111,6 +117,7 @@ class ScrollBillViewModel(
         refreshJob = viewModelScope.launch {
             _uiState.value = ScrollBillUiState.CheckingPermission
             val hasAccess = withContext(Dispatchers.IO) { usageAccessChecker.hasUsageAccess() }
+            _usageAccessGranted.value = hasAccess
             if (!hasAccess) {
                 _uiState.value = ScrollBillUiState.UsageAccessRequired
                 return@launch
@@ -140,12 +147,44 @@ class ScrollBillViewModel(
         } else {
             viewModelScope.launch {
                 val hasAccess = withContext(Dispatchers.IO) { usageAccessChecker.hasUsageAccess() }
-                if (!hasAccess) {
-                    closeReceiptPreview()
-                    _uiState.value = ScrollBillUiState.UsageAccessRequired
+                _usageAccessGranted.value = hasAccess
+                when {
+                    _screen.value == ScrollBillScreen.ReceiptPreview && !hasAccess -> {
+                        closeReceiptPreview()
+                        _uiState.value = ScrollBillUiState.UsageAccessRequired
+                    }
+                    _screen.value != ScrollBillScreen.ReceiptPreview && hasAccess &&
+                        _uiState.value is ScrollBillUiState.UsageAccessRequired -> refresh()
+                    !hasAccess -> {
+                        _uiState.value = ScrollBillUiState.UsageAccessRequired
+                    }
                 }
             }
         }
+    }
+
+    fun openSettings() {
+        _screen.value = ScrollBillScreen.Settings
+    }
+
+    fun openPrivacy() {
+        _screen.value = ScrollBillScreen.Privacy
+    }
+
+    fun closeInfoScreen() {
+        when (_screen.value) {
+            ScrollBillScreen.Privacy -> _screen.value = ScrollBillScreen.Settings
+            ScrollBillScreen.Settings -> _screen.value = ScrollBillScreen.Dashboard
+            else -> Unit
+        }
+    }
+
+    fun onUsageAccessSettingsOpened() {
+        _usageAccessSettingsError.value = false
+    }
+
+    fun onUsageAccessSettingsUnavailable() {
+        _usageAccessSettingsError.value = true
     }
 
     fun createReceipt() {

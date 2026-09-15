@@ -1,4 +1,4 @@
-# ScrollBill Phase 1 architecture
+# ScrollBill Phase 2 architecture
 
 ## Current architecture
 
@@ -10,10 +10,13 @@ The single `app` module uses a small separation of concerns:
 - `data/usage`: Android AppOps access checking, `UsageStatsManager` queries, launcher metadata indexing/resolution, and dynamic HOME exclusion resolution.
 - `data/receipt`: `CacheReceiptFileStore` writes the current PNG into the dedicated app-cache directory and creates a FileProvider URI.
 - `ui`: a `ScrollBillViewModel` exposes typed report, screen, and receipt-preview states; Compose renders access, loading, empty, error, dashboard, and receipt-preview states.
+- `ui`: also contains the focused Usage Access onboarding, Settings/About, and Privacy screens. Navigation remains explicit screen state rather than a navigation framework.
 - `ui/receipt`: `ClassicReceiptRenderer` draws the fixed-size receipt Bitmap and receipt-specific formatting utilities.
 - `ui/theme`: Material 3 light/dark color schemes.
 
 The activity owns only system setup, the ViewModel factory, the settings intent fallback, and Compose content. No platform usage query occurs in a composable.
+
+The application identity uses a receipt/time vector mark for the in-app header and an adaptive launcher icon with a monochrome variant. Version metadata is kept in the single application module; release signing is intentionally external to the repository.
 
 ## Dependency direction
 
@@ -28,6 +31,8 @@ The ViewModel checks AppOps on a background dispatcher. After access is granted,
 The primary period is `[today - 7 days at local date, today at local date)`. Each day is converted from local midnight to epoch milliseconds in the device timezone before its daily query. This is seven completed calendar days, not a rolling 168-hour interval, and remains correct across timezone offset changes.
 
 Phase 1 receipts use this same seven-completed-day period only; other periods are future work.
+
+Phase 2 adds no new reporting period or persistence. Settings and Privacy are informational surfaces; Usage Access remains the only special capability required by the core report.
 
 ## Privacy boundary
 

@@ -1,1 +1,2 @@
-# Phase 0 has no custom R8 rules.
+# No custom keep rules are currently required. Android components and
+# FileProvider metadata are retained by their manifest/resource references.
