@@ -1,6 +1,7 @@
 package com.soultware.scrollbill.ui
 
 import android.graphics.Bitmap
+import android.net.Uri
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -33,6 +34,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -46,6 +48,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.soultware.scrollbill.domain.model.UsagePeriod
+import com.soultware.scrollbill.ui.receipt.ReceiptPreviewScreen
 import com.soultware.scrollbill.ui.theme.ScrollBillTheme
 import java.time.LocalDate
 import java.time.ZoneId
@@ -56,40 +59,62 @@ import java.util.Locale
 fun ScrollBillApp(
     viewModel: ScrollBillViewModel,
     onGrantUsageAccess: () -> Unit,
+    onShareReceipt: (Uri) -> Boolean,
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
+    val screen by viewModel.screen.collectAsStateWithLifecycle()
+    val receiptState by viewModel.receiptState.collectAsStateWithLifecycle()
+
+    LaunchedEffect(receiptState) {
+        val shareReady = receiptState as? ReceiptPreviewUiState.ShareReady ?: return@LaunchedEffect
+        if (onShareReceipt(shareReady.uri)) {
+            viewModel.onShareIntentLaunched()
+        } else {
+            viewModel.onShareIntentUnavailable()
+        }
+    }
+
     ScrollBillTheme {
-        Scaffold(
-            topBar = {
-                ScrollBillTopBar(
-                    showRefresh = state is ScrollBillUiState.Loaded ||
-                        state is ScrollBillUiState.NoUsageData ||
-                        state is ScrollBillUiState.RecoverableError,
-                    onRefresh = viewModel::refresh,
-                )
-            },
-        ) { paddingValues ->
-            when (val currentState = state) {
-                ScrollBillUiState.CheckingPermission -> LoadingState(Modifier.padding(paddingValues))
-                ScrollBillUiState.UsageAccessRequired -> AccessRequiredState(
-                    modifier = Modifier.padding(paddingValues),
-                    onGrantUsageAccess = onGrantUsageAccess,
-                )
-                ScrollBillUiState.Loading -> LoadingState(Modifier.padding(paddingValues))
-                is ScrollBillUiState.Loaded -> DashboardState(
-                    modifier = Modifier.padding(paddingValues),
-                    summary = currentState.summary,
-                    onRefresh = viewModel::refresh,
-                )
-                ScrollBillUiState.NoUsageData -> EmptyState(
-                    modifier = Modifier.padding(paddingValues),
-                    onRefresh = viewModel::refresh,
-                )
-                ScrollBillUiState.RecoverableError -> ErrorState(
-                    modifier = Modifier.padding(paddingValues),
-                    onRetry = viewModel::refresh,
-                )
+        when (screen) {
+            ScrollBillScreen.Dashboard -> Scaffold(
+                topBar = {
+                    ScrollBillTopBar(
+                        showRefresh = state is ScrollBillUiState.Loaded ||
+                            state is ScrollBillUiState.NoUsageData ||
+                            state is ScrollBillUiState.RecoverableError,
+                        onRefresh = viewModel::refresh,
+                    )
+                },
+            ) { paddingValues ->
+                when (val currentState = state) {
+                    ScrollBillUiState.CheckingPermission -> LoadingState(Modifier.padding(paddingValues))
+                    ScrollBillUiState.UsageAccessRequired -> AccessRequiredState(
+                        modifier = Modifier.padding(paddingValues),
+                        onGrantUsageAccess = onGrantUsageAccess,
+                    )
+                    ScrollBillUiState.Loading -> LoadingState(Modifier.padding(paddingValues))
+                    is ScrollBillUiState.Loaded -> DashboardState(
+                        modifier = Modifier.padding(paddingValues),
+                        summary = currentState.summary,
+                        onRefresh = viewModel::refresh,
+                        onCreateReceipt = viewModel::createReceipt,
+                    )
+                    ScrollBillUiState.NoUsageData -> EmptyState(
+                        modifier = Modifier.padding(paddingValues),
+                        onRefresh = viewModel::refresh,
+                    )
+                    ScrollBillUiState.RecoverableError -> ErrorState(
+                        modifier = Modifier.padding(paddingValues),
+                        onRetry = viewModel::refresh,
+                    )
+                }
             }
+            ScrollBillScreen.ReceiptPreview -> ReceiptPreviewScreen(
+                state = receiptState,
+                onBack = viewModel::closeReceiptPreview,
+                onShare = viewModel::shareReceipt,
+                onRetry = viewModel::retryReceipt,
+            )
         }
     }
 }
@@ -174,7 +199,12 @@ private fun LoadingState(modifier: Modifier) {
 }
 
 @Composable
-private fun DashboardState(modifier: Modifier, summary: UsageSummaryUi, onRefresh: () -> Unit) {
+private fun DashboardState(
+    modifier: Modifier,
+    summary: UsageSummaryUi,
+    onRefresh: () -> Unit,
+    onCreateReceipt: () -> Unit,
+) {
     LazyColumn(
         modifier = modifier.fillMaxSize(),
         contentPadding = androidx.compose.foundation.layout.PaddingValues(start = 20.dp, end = 20.dp, bottom = 28.dp),
@@ -192,6 +222,11 @@ private fun DashboardState(modifier: Modifier, summary: UsageSummaryUi, onRefres
             }
         }
         item { SummaryCards(summary) }
+        item {
+            Button(onClick = onCreateReceipt, modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp)) {
+                Text("Create my receipt")
+            }
+        }
         item {
             Text("Top applications", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.SemiBold)
         }
@@ -370,6 +405,7 @@ private fun DashboardPreview() {
             modifier = Modifier.fillMaxSize(),
             summary = UsageSummaryUi(period, 6_540_000L, 934_285L, 48_171_000_000L, sampleApps.first(), sampleApps),
             onRefresh = {},
+            onCreateReceipt = {},
         )
     }
 }

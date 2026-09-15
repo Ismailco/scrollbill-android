@@ -2,9 +2,9 @@
 
 ScrollBill is a privacy-first Android app that turns real Android app-usage statistics into an understandable screen-time summary.
 
-## Phase 0 scope
+## Current Phase 1 scope
 
-Phase 0 proves the Android usage foundation only:
+Phase 1 adds the first shareable product experience on top of the verified Phase 0 foundation:
 
 - requests and re-checks Android Usage Access
 - queries real `UsageStatsManager` data
@@ -12,9 +12,14 @@ Phase 0 proves the Android usage foundation only:
 - shows totals, daily average, projected annual use, and ranked apps in Compose
 - resolves launchable app labels/icons through an in-memory launcher metadata index
 - excludes the current HOME app and justified Android infrastructure from totals and rankings
+- creates a frozen receipt snapshot from the current seven-day report
+- renders one deterministic Classic receipt at 1080×1920 as PNG
+- previews that exact rendered bitmap in-app and shares it through the Android Sharesheet
 - keeps usage data on the device
 
-There is no sharing, receipt-card generation, backend, account, analytics, networking, or persistence in this phase.
+The receipt currently supports the last seven completed local calendar days only.
+
+There is no monetization, account, analytics, backend, networking, permanent receipt storage, or additional report period in this phase.
 
 ## Requirements
 
@@ -54,6 +59,10 @@ Install the debug APK from `app/build/outputs/apk/debug/app-debug.apk` using And
 7. Return to the app and verify it returns to the access-required state.
 8. Grant access again.
 9. Verify **Refresh report** re-queries the device history.
+10. From a loaded report, tap **Create my receipt**.
+11. Verify the preview shows the weekly receipt and tap **Share receipt**.
+12. Choose a target in the Android Sharesheet and verify it receives a PNG image.
+13. Return to ScrollBill and verify the dashboard report remains available.
 
 The platform may return an empty report on a new emulator or device. That is shown as an empty state, not fabricated data.
 
@@ -62,6 +71,10 @@ The platform may return an empty report on a new emulator or device. That is sho
 The source app manifest explicitly declares only `android.permission.PACKAGE_USAGE_STATS` and a narrow launcher-intent `<queries>` declaration. AndroidX adds its internal signature-protected dynamic-receiver permission to the merged manifest; it is not a user-granted capability and is unrelated to usage data. Usage history is queried locally and is never uploaded, logged as individual records, persisted in a database, or sent to a service. The app intentionally does not request `QUERY_ALL_PACKAGES` and falls back to package names or a neutral icon when package metadata is not visible or cannot be resolved.
 
 UsageStats supplies package names and foreground durations, not guaranteed consumer-facing labels or icons. Android package visibility can limit metadata discovery, so ScrollBill declares visibility only for applications exposing the ordinary `ACTION_MAIN` + `CATEGORY_LAUNCHER` intent. It builds a package-keyed launcher metadata index in memory with `PackageManager.queryIntentActivities()` for the current user, then tries `LauncherApps`, permitted direct `PackageManager` metadata, and finally the package name plus a neutral icon. No individual package names or broad package inventory visibility are declared.
+
+The receipt uses only display labels and durations from the current loaded report. `ReceiptSnapshot` excludes package identifiers and app icons. The Classic receipt is a fixed 1080×1920 text-oriented image containing the last seven completed days, top five apps, reconciled other-app usage, total, daily average, yearly pace, and `Made with ScrollBill`. It is rendered once and the same bitmap is shown in preview and encoded as PNG for sharing.
+
+Sharing is explicitly user initiated. The PNG is written to `cacheDir/shared_receipts/scrollbill-weekly-receipt.png`, exposed only through the non-exported FileProvider, and sent with `ACTION_SEND` as `image/png`. It is not saved to public storage or permanently persisted.
 
 Report totals mean ScrollBill's aggregated foreground application usage after excluding ScrollBill, the resolved HOME application, `android`, and `com.android.systemui`. This is a product-specific aggregation and should not be represented as guaranteed identical to Android Digital Wellbeing's proprietary calculation.
 
@@ -76,4 +89,4 @@ There is no Internet permission, backend, API client, analytics, telemetry, cras
 
 ## Future work
 
-Future phases may decide how to add receipt-card design and sharing. Those features are deliberately not implemented here.
+Future phases may decide how to add monetization, additional receipt themes, and additional report periods. Those features are deliberately not implemented here.

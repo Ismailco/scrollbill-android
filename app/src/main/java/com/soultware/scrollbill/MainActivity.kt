@@ -1,7 +1,9 @@
 package com.soultware.scrollbill
 
 import android.content.ActivityNotFoundException
+import android.content.ClipData
 import android.content.Intent
+import android.net.Uri
 import android.os.Bundle
 import android.provider.Settings
 import androidx.activity.ComponentActivity
@@ -16,6 +18,8 @@ import com.soultware.scrollbill.domain.usage.UsageAggregator
 import com.soultware.scrollbill.ui.ScrollBillApp
 import com.soultware.scrollbill.ui.ScrollBillViewModel
 import com.soultware.scrollbill.ui.ScrollBillViewModelFactory
+import com.soultware.scrollbill.data.receipt.CacheReceiptFileStore
+import com.soultware.scrollbill.ui.receipt.ClassicReceiptRenderer
 import java.time.ZoneId
 
 class MainActivity : ComponentActivity() {
@@ -23,6 +27,7 @@ class MainActivity : ComponentActivity() {
         val metadataResolver = AndroidPackageMetadataResolver(applicationContext)
         val usageAccessChecker = AndroidUsageAccessChecker(applicationContext)
         val exclusionPolicyProvider = AndroidUsageExclusionPolicyProvider(applicationContext)
+        val receiptFileStore = CacheReceiptFileStore(applicationContext)
         ScrollBillViewModelFactory(
             usageAccessChecker = usageAccessChecker,
             usageStatsRepository = AndroidUsageStatsRepository(
@@ -31,6 +36,8 @@ class MainActivity : ComponentActivity() {
                 aggregator = UsageAggregator(),
             ),
             metadataResolver = metadataResolver,
+            receiptRenderer = ClassicReceiptRenderer(),
+            receiptFileStore = receiptFileStore,
             clock = java.time.Clock.systemDefaultZone(),
             zoneId = ZoneId.systemDefault(),
         )
@@ -43,6 +50,7 @@ class MainActivity : ComponentActivity() {
             ScrollBillApp(
                 viewModel = viewModel,
                 onGrantUsageAccess = ::openUsageAccessSettings,
+                onShareReceipt = ::shareReceipt,
             )
         }
     }
@@ -63,6 +71,21 @@ class MainActivity : ComponentActivity() {
             } catch (_: ActivityNotFoundException) {
                 viewModel.onAppResumed()
             }
+        }
+    }
+
+    private fun shareReceipt(uri: Uri): Boolean {
+        val shareIntent = Intent(Intent.ACTION_SEND).apply {
+            type = "image/png"
+            putExtra(Intent.EXTRA_STREAM, uri)
+            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            clipData = ClipData.newRawUri("ScrollBill receipt", uri)
+        }
+        return try {
+            startActivity(Intent.createChooser(shareIntent, "Share receipt"))
+            true
+        } catch (_: ActivityNotFoundException) {
+            false
         }
     }
 }
