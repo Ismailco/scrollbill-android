@@ -24,7 +24,7 @@ class UsageAggregatorTest {
                 UsageInputRecord("video", 40_000L),
                 UsageInputRecord("chat", 20_000L),
             ),
-            ownPackageName = "scrollbill",
+            exclusionPolicy = UsageExclusionPolicy.forApplication("scrollbill", homePackageName = null),
         )
 
         assertEquals(listOf("video", "chat"), summary.rankedApplications.map { it.packageName })
@@ -37,7 +37,7 @@ class UsageAggregatorTest {
         val summary = aggregator.summarize(
             period,
             listOf(UsageInputRecord("video", 7L * 60L * 60L * 1_000L)),
-            ownPackageName = "scrollbill",
+            exclusionPolicy = UsageExclusionPolicy.forApplication("scrollbill", homePackageName = null),
         )
 
         assertEquals(60L * 60L * 1_000L, summary.averageDailyDurationMillis)
@@ -52,7 +52,7 @@ class UsageAggregatorTest {
                 UsageInputRecord("zero", 0L),
                 UsageInputRecord("negative", -1L),
             ),
-            ownPackageName = "scrollbill",
+            exclusionPolicy = UsageExclusionPolicy.forApplication("scrollbill", homePackageName = null),
         )
 
         assertEquals(0L, summary.totalForegroundDurationMillis)
@@ -71,9 +71,31 @@ class UsageAggregatorTest {
                 UsageInputRecord("android", 200L),
                 UsageInputRecord("visible.app", 300L),
             ),
-            ownPackageName = "scrollbill",
+            exclusionPolicy = UsageExclusionPolicy.forApplication("scrollbill", homePackageName = null),
         )
 
         assertEquals(listOf("visible.app"), summary.rankedApplications.map { it.packageName })
+    }
+
+    @Test
+    fun `dynamically supplied home and system ui packages are excluded from all metrics`() {
+        val summary = aggregator.summarize(
+            period,
+            listOf(
+                UsageInputRecord("com.example.home", 10L * 60L * 60L * 1_000L),
+                UsageInputRecord("com.android.systemui", 2L * 60L * 60L * 1_000L),
+                UsageInputRecord("normal.app", 7L * 60L * 60L * 1_000L),
+            ),
+            exclusionPolicy = UsageExclusionPolicy.forApplication(
+                ownPackageName = "scrollbill",
+                homePackageName = "com.example.home",
+            ),
+        )
+
+        assertEquals(listOf("normal.app"), summary.rankedApplications.map { it.packageName })
+        assertEquals(7L * 60L * 60L * 1_000L, summary.totalForegroundDurationMillis)
+        assertEquals(60L * 60L * 1_000L, summary.averageDailyDurationMillis)
+        assertEquals(365L * 60L * 60L * 1_000L, summary.projectedAnnualDurationMillis)
+        assertEquals("normal.app", summary.highestUsageApplication?.packageName)
     }
 }

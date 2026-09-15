@@ -13,12 +13,11 @@ class UsageAggregator {
     fun summarize(
         period: UsagePeriod,
         records: Iterable<UsageInputRecord>,
-        ownPackageName: String,
+        exclusionPolicy: UsageExclusionPolicy,
     ): WeeklyUsageSummary {
         val durationsByPackage = records
             .asSequence()
-            .filter { it.packageName != ownPackageName }
-            .filter { it.packageName != ANDROID_PACKAGE }
+            .filterNot { exclusionPolicy.excludes(it.packageName) }
             .filter { it.foregroundDurationMillis > 0L }
             .groupingBy { it.packageName }
             .fold(0L) { total, record -> total + record.foregroundDurationMillis }
@@ -47,8 +46,5 @@ class UsageAggregator {
         )
     }
 
-    companion object {
-        private const val ANDROID_PACKAGE = "android"
-        private const val DAYS_PER_YEAR = 365
-    }
+    companion object { private const val DAYS_PER_YEAR = 365 }
 }

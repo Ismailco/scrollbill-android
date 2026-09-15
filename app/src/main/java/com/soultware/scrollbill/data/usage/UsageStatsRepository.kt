@@ -2,7 +2,6 @@ package com.soultware.scrollbill.data.usage
 
 import android.app.usage.UsageStatsManager
 import android.content.Context
-import com.soultware.scrollbill.domain.model.AppUsage
 import com.soultware.scrollbill.domain.model.UsagePeriod
 import com.soultware.scrollbill.domain.model.WeeklyUsageSummary
 import com.soultware.scrollbill.domain.usage.UsageAggregator
@@ -18,9 +17,8 @@ class UsageStatsAccessException(cause: SecurityException) : Exception(cause)
 
 class AndroidUsageStatsRepository(
     context: Context,
-    private val ownPackageName: String,
+    private val exclusionPolicyProvider: UsageExclusionPolicyProvider,
     private val aggregator: UsageAggregator = UsageAggregator(),
-    private val metadataResolver: PackageMetadataResolver,
 ) : UsageStatsRepository {
     private val usageStatsManager =
         context.getSystemService(UsageStatsManager::class.java)
@@ -44,17 +42,10 @@ class AndroidUsageStatsRepository(
                 throw UsageStatsAccessException(exception)
             }
 
-            val summary = aggregator.summarize(
+            aggregator.summarize(
                 period = period,
                 records = records,
-                ownPackageName = ownPackageName,
-            )
-
-            summary.copy(
-                rankedApplications = summary.rankedApplications.map { app ->
-                    val metadata = metadataResolver.resolve(app.packageName)
-                    app.copy(displayLabel = metadata.label)
-                },
+                exclusionPolicy = exclusionPolicyProvider.currentPolicy(),
             )
         }
 }

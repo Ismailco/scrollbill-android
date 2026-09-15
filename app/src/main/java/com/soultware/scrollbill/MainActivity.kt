@@ -10,6 +10,7 @@ import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
 import com.soultware.scrollbill.data.usage.AndroidPackageMetadataResolver
 import com.soultware.scrollbill.data.usage.AndroidUsageAccessChecker
+import com.soultware.scrollbill.data.usage.AndroidUsageExclusionPolicyProvider
 import com.soultware.scrollbill.data.usage.AndroidUsageStatsRepository
 import com.soultware.scrollbill.domain.usage.UsageAggregator
 import com.soultware.scrollbill.ui.ScrollBillApp
@@ -21,13 +22,13 @@ class MainActivity : ComponentActivity() {
     private val viewModel: ScrollBillViewModel by viewModels {
         val metadataResolver = AndroidPackageMetadataResolver(applicationContext)
         val usageAccessChecker = AndroidUsageAccessChecker(applicationContext)
+        val exclusionPolicyProvider = AndroidUsageExclusionPolicyProvider(applicationContext)
         ScrollBillViewModelFactory(
             usageAccessChecker = usageAccessChecker,
             usageStatsRepository = AndroidUsageStatsRepository(
                 context = applicationContext,
-                ownPackageName = applicationContext.packageName,
+                exclusionPolicyProvider = exclusionPolicyProvider,
                 aggregator = UsageAggregator(),
-                metadataResolver = metadataResolver,
             ),
             metadataResolver = metadataResolver,
             clock = java.time.Clock.systemDefaultZone(),

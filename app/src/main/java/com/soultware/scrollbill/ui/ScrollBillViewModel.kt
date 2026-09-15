@@ -8,7 +8,6 @@ import com.soultware.scrollbill.data.usage.PackageMetadataResolver
 import com.soultware.scrollbill.data.usage.UsageAccessChecker
 import com.soultware.scrollbill.data.usage.UsageStatsAccessException
 import com.soultware.scrollbill.data.usage.UsageStatsRepository
-import com.soultware.scrollbill.domain.model.AppUsage
 import com.soultware.scrollbill.domain.model.UsagePeriod
 import com.soultware.scrollbill.domain.model.WeeklyUsageSummary
 import kotlinx.coroutines.Dispatchers
@@ -93,11 +92,12 @@ class ScrollBillViewModel(
     private suspend fun WeeklyUsageSummary.toUiModel(): UsageSummaryUi {
         val apps = withContext(Dispatchers.IO) {
             rankedApplications.map { app ->
+                val metadata = metadataResolver.resolve(app.packageName)
                 AppUsageUi(
                     packageName = app.packageName,
-                    displayLabel = app.displayLabel,
+                    displayLabel = metadata.label,
                     foregroundDurationMillis = app.foregroundDurationMillis,
-                    icon = metadataResolver.resolve(app.packageName).icon,
+                    icon = metadata.icon,
                 )
             }
         }
