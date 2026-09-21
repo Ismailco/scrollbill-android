@@ -3,10 +3,12 @@ package com.soultware.scrollbill.domain.usage
 import com.soultware.scrollbill.domain.model.AppUsage
 import com.soultware.scrollbill.domain.model.UsagePeriod
 import com.soultware.scrollbill.domain.model.WeeklyUsageSummary
+import java.time.LocalDate
 
 data class UsageInputRecord(
     val packageName: String,
     val foregroundDurationMillis: Long,
+    val day: LocalDate? = null,
 )
 
 class UsageAggregator {

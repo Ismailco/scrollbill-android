@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -41,9 +42,10 @@ fun ReceiptPreviewScreen(
 ) {
     BackHandler(onBack = onBack)
     Scaffold(
+        containerColor = MaterialTheme.colorScheme.background,
         topBar = {
             TopAppBar(
-                title = { Text("Your receipt") },
+                title = { Text("Weekly receipt", fontWeight = FontWeight.Bold) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
@@ -146,6 +148,8 @@ private fun ColumnScope.ReceiptImageAndAction(
         onClick = onAction,
         enabled = actionEnabled,
         modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp),
+        shape = androidx.compose.foundation.shape.RoundedCornerShape(18.dp),
+        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
     ) {
         Text(actionLabel)
     }

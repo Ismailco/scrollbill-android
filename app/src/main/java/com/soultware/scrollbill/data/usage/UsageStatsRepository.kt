@@ -25,6 +25,7 @@ class AndroidUsageStatsRepository(
 
     override suspend fun loadWeeklySummary(period: UsagePeriod): WeeklyUsageSummary =
         withContext(Dispatchers.IO) {
+            val exclusionPolicy = exclusionPolicyProvider.currentPolicy()
             val records = try {
                 period.days().flatMap { day ->
                     usageStatsManager.queryUsageStats(
@@ -35,6 +36,7 @@ class AndroidUsageStatsRepository(
                         UsageInputRecord(
                             packageName = usageStats.packageName,
                             foregroundDurationMillis = usageStats.totalTimeInForeground,
+                            day = day.date,
                         )
                     }
                 }
@@ -45,7 +47,15 @@ class AndroidUsageStatsRepository(
             aggregator.summarize(
                 period = period,
                 records = records,
-                exclusionPolicy = exclusionPolicyProvider.currentPolicy(),
+                exclusionPolicy = exclusionPolicy,
+            ).copy(
+                dailyForegroundDurationMillis = period.days().map { day ->
+                    records
+                        .filter { record -> record.day == day.date }
+                        .filterNot { record -> exclusionPolicy.excludes(record.packageName) }
+                        .filter { record -> record.foregroundDurationMillis > 0L }
+                        .sumOf { record -> record.foregroundDurationMillis }
+                },
             )
         }
 }

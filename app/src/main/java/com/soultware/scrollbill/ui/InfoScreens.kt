@@ -171,7 +171,7 @@ private fun InfoScaffold(title: String, onBack: () -> Unit, content: @Composable
 @Composable
 private fun InfoMark(modifier: Modifier = Modifier) {
     Image(
-        painter = painterResource(com.soultware.scrollbill.R.drawable.ic_scrollbill),
+        painter = painterResource(com.soultware.scrollbill.R.drawable.scrollbill_brand),
         contentDescription = null,
         modifier = modifier,
     )

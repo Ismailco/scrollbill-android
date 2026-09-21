@@ -6,6 +6,7 @@ data class WeeklyUsageSummary(
     val averageDailyDurationMillis: Long,
     val projectedAnnualDurationMillis: Long,
     val rankedApplications: List<AppUsage>,
+    val dailyForegroundDurationMillis: List<Long> = emptyList(),
 ) {
     val highestUsageApplication: AppUsage?
         get() = rankedApplications.firstOrNull()

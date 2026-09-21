@@ -77,6 +77,7 @@ data class UsageSummaryUi(
     val projectedAnnualDurationMillis: Long,
     val highestUsageApplication: AppUsageUi?,
     val rankedApplications: List<AppUsageUi>,
+    val dailyDurationMillis: List<Long> = emptyList(),
 )
 
 data class AppUsageUi(
@@ -277,6 +278,7 @@ class ScrollBillViewModel(
             projectedAnnualDurationMillis = projectedAnnualDurationMillis,
             highestUsageApplication = apps.firstOrNull(),
             rankedApplications = apps,
+            dailyDurationMillis = dailyForegroundDurationMillis,
         )
     }
 }

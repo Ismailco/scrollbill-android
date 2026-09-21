@@ -1,10 +1,4 @@
 <?xml version="1.0" encoding="utf-8"?>
-<vector xmlns:android="http://schemas.android.com/apk/res/android"
-    android:width="108dp"
-    android:height="108dp"
-    android:viewportWidth="108"
-    android:viewportHeight="108">
-    <path android:fillColor="#F8F5EE" android:pathData="M27,14h54c2.8,0 5,2.2 5,5v62l-7,-5 -8,5 -8,-5 -8,5 -8,-5 -8,5 -8,-5 -8,5v-62c0,-2.8 2.2,-5 5,-5z" />
-    <path android:fillColor="#20324E" android:pathData="M34,29h34v5h-34zM34,42h28v5h-28z" />
-    <path android:fillColor="#3159C8" android:pathData="M78,67a13,13 0,1 1,-26 0a13,13 0,1 1,26 0M63,58h4v10l-7,5 -2,-3 5,-4z" />
-</vector>
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:drawable="@drawable/scrollbill_brand" />
+</layer-list>
