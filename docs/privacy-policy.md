@@ -2,7 +2,7 @@
 
 **Effective date:** [To be set before publication]
 
-This draft describes ScrollBill version 0.1.0 as currently implemented. It is intended for review before being published at a public privacy-policy URL.
+This draft describes ScrollBill version 0.1.1 as currently implemented. It is intended for review before being published at a public privacy-policy URL.
 
 ## What ScrollBill accesses
 

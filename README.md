@@ -114,7 +114,7 @@ There is no Internet permission, backend, API client, analytics, telemetry, cras
 
 ## Versioning
 
-The beta application ID is `com.soultware.scrollbill`, with `versionCode 1` and `versionName 0.1.0`. Beta development follows `0.x.y`; every future Play upload must increase `versionCode`.
+The beta application ID is `com.soultware.scrollbill`, with `versionCode 2` and `versionName 0.1.1`. Beta development follows `0.x.y`; every future Play upload must increase `versionCode`.
 
 ## Future work
 

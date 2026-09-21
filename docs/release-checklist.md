@@ -3,7 +3,7 @@
 ## Repository and application
 
 - [x] Application ID checked: `com.soultware.scrollbill`
-- [x] Version checked: `versionCode 1`, `versionName 0.1.0`
+- [x] Version checked: `versionCode 2`, `versionName 0.1.1`
 - [x] Launcher, adaptive, and monochrome icon resources included
 - [ ] Privacy policy draft reviewed and hosted publicly
 - [ ] Google Play developer account and app record prepared

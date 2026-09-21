@@ -1,6 +1,6 @@
 # Google Play Data Safety Preparation (Internal)
 
-This is an internal preparation note for the current ScrollBill 0.1.0 implementation. It is not a completed Google Play declaration; the final questionnaire and policy interpretation require human review before submission.
+This is an internal preparation note for the current ScrollBill 0.1.1 implementation. It is not a completed Google Play declaration; the final questionnaire and policy interpretation require human review before submission.
 
 ## Current implementation facts
 
