@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="ScrollBill turns your Android usage history into a clear weekly report and a shareable phone-time receipt.">
+  <meta name="theme-color" content="#0f1c31">
+  <title>ScrollBill — See where your time went</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="site-header">
+    <a class="brand" href="index.html" aria-label="ScrollBill home">
+      <svg class="brand-mark" viewBox="0 0 108 108" aria-hidden="true">
+        <path class="mark-paper" d="M27 14h54c2.8 0 5 2.2 5 5v62l-7-5-8 5-8-5-8 5-8-5-8 5-8-5-8 5V19c0-2.8 2.2-5 5-5Z"/>
+        <path class="mark-ink" d="M34 29h34v5H34zm0 13h28v5H34z"/>
+        <path class="mark-accent" d="M78 67a13 13 0 1 1-26 0 13 13 0 0 1 26 0Zm-15-9h4v10l-7 5-2-3 5-4V58Z"/>
+      </svg>
+      <span>ScrollBill</span>
+    </a>
+    <nav class="nav-links" aria-label="Primary navigation">
+      <a href="#how-it-works">How it works</a>
+      <a href="#privacy">Privacy</a>
+      <a class="nav-button" href="privacy.html">Privacy policy</a>
+    </nav>
+  </header>
+
+  <main>
+    <section class="hero section-shell">
+      <div class="hero-copy">
+        <p class="eyebrow">A private weekly phone-time report</p>
+        <h1>See where your time went.</h1>
+        <p class="hero-lede">ScrollBill reads the Android usage history already on your phone and turns the week into a clear, shareable receipt.</p>
+        <div class="hero-actions">
+          <a class="button button-primary" href="#how-it-works">See how it works <span aria-hidden="true">↘</span></a>
+          <a class="button button-quiet" href="privacy.html">Read the privacy policy</a>
+        </div>
+        <p class="privacy-note"><span class="note-dot" aria-hidden="true"></span>Your usage data stays on this device.</p>
+      </div>
+      <div class="hero-receipt" aria-label="Sample ScrollBill weekly receipt">
+        <div class="receipt-shadow"></div>
+        <article class="receipt-card">
+          <div class="receipt-head">
+            <span class="receipt-brand">SCROLLBILL</span>
+            <span class="receipt-meta">WEEKLY PHONE RECEIPT</span>
+            <span class="receipt-date">SEP 8 — SEP 14, 2026</span>
+          </div>
+          <div class="receipt-total">
+            <span class="receipt-number">24h 34m</span>
+            <span class="receipt-label">TOTAL APP TIME THIS WEEK</span>
+          </div>
+          <div class="receipt-rule"></div>
+          <div class="receipt-section-label">APP TIME</div>
+          <div class="receipt-row"><span>Instagram</span><strong>8h 47m</strong></div>
+          <div class="receipt-row"><span>YouTube</span><strong>3h 01m</strong></div>
+          <div class="receipt-row"><span>LinkedIn</span><strong>2h 09m</strong></div>
+          <div class="receipt-row"><span>Gmail</span><strong>1h 02m</strong></div>
+          <div class="receipt-row"><span>Vivaldi</span><strong>58m</strong></div>
+          <div class="receipt-row"><span>Other apps</span><strong>8h 37m</strong></div>
+          <div class="receipt-rule"></div>
+          <div class="receipt-summary"><span>Total</span><strong>24h 34m</strong></div>
+          <div class="receipt-summary"><span>Daily average</span><strong>3h 30m</strong></div>
+          <div class="receipt-summary"><span>Yearly pace</span><strong>~53 days</strong></div>
+          <div class="receipt-footer">TIME IS NON-REFUNDABLE.</div>
+          <div class="receipt-made">Made with ScrollBill</div>
+        </article>
+      </div>
+    </section>
+
+    <section class="trust-strip" id="privacy">
+      <div class="section-shell trust-grid">
+        <p class="eyebrow">Local by default</p>
+        <p>There is no account, cloud sync, advertising, analytics, or backend. ScrollBill calculates your report on your Android device.</p>
+        <a href="privacy.html">How privacy works <span aria-hidden="true">→</span></a>
+      </div>
+    </section>
+
+    <section class="section-shell feature-section" id="how-it-works">
+      <div class="section-intro">
+        <p class="eyebrow">The weekly loop</p>
+        <h2>Useful before it is shareable.</h2>
+        <p>ScrollBill keeps the useful part simple: understand the last seven completed days, then decide if you want to share the receipt.</p>
+      </div>
+      <div class="feature-grid">
+        <article class="feature-card">
+          <span class="feature-number">01</span>
+          <h3>Grant Usage Access</h3>
+          <p>Android shows you exactly which special access ScrollBill needs. You can revoke it at any time in system settings.</p>
+        </article>
+        <article class="feature-card feature-card-accent">
+          <span class="feature-number">02</span>
+          <h3>Understand the week</h3>
+          <p>See total app time, a daily average, yearly pace, and the applications that took the most foreground time.</p>
+        </article>
+        <article class="feature-card">
+          <span class="feature-number">03</span>
+          <h3>Make a receipt</h3>
+          <p>Turn the current seven-day report into a 1080×1920 PNG and share it only when you choose a destination.</p>
+        </article>
+      </div>
+    </section>
+
+    <section class="closing section-shell">
+      <div>
+        <p class="eyebrow">Your phone. Your history. Your choice.</p>
+        <h2>Time is non-refundable.<br>At least make it legible.</h2>
+      </div>
+      <a class="button button-primary" href="privacy.html">Read the privacy policy <span aria-hidden="true">↗</span></a>
+    </section>
+  </main>
+
+  <footer class="site-footer section-shell">
+    <span>© <span data-current-year>2026</span> ScrollBill</span>
+    <span>Made for Android · <a href="privacy.html">Privacy</a></span>
+  </footer>
+  <script src="script.js"></script>
+</body>
+</html>

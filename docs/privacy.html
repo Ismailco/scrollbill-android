@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="ScrollBill privacy policy. Reports are calculated locally on your Android device.">
+  <meta name="theme-color" content="#0f1c31">
+  <title>Privacy policy — ScrollBill</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="site-header">
+    <a class="brand" href="index.html" aria-label="ScrollBill home">
+      <svg class="brand-mark" viewBox="0 0 108 108" aria-hidden="true">
+        <path class="mark-paper" d="M27 14h54c2.8 0 5 2.2 5 5v62l-7-5-8 5-8-5-8 5-8-5-8 5-8-5-8 5V19c0-2.8 2.2-5 5-5Z"/>
+        <path class="mark-ink" d="M34 29h34v5H34zm0 13h28v5H34z"/>
+        <path class="mark-accent" d="M78 67a13 13 0 1 1-26 0 13 13 0 0 1 26 0Zm-15-9h4v10l-7 5-2-3 5-4V58Z"/>
+      </svg>
+      <span>ScrollBill</span>
+    </a>
+    <nav class="nav-links" aria-label="Primary navigation">
+      <a href="index.html#how-it-works">How it works</a>
+      <a class="nav-button" href="privacy.html">Privacy policy</a>
+    </nav>
+  </header>
+
+  <main class="legal-page section-shell">
+    <p class="eyebrow">ScrollBill · Privacy</p>
+    <h1>Privacy policy</h1>
+    <p class="legal-lede">Effective date: September 21, 2026</p>
+    <p>This policy describes ScrollBill version 0.1.0 as currently implemented. ScrollBill turns Android application usage history into a local weekly report and an optional shareable receipt.</p>
+
+    <div class="legal-callout">
+      <strong>Short version:</strong> ScrollBill processes usage information on your Android device. It has no account, backend, analytics, advertising, or Internet connection. Nothing is uploaded by ScrollBill.
+    </div>
+
+    <h2>What ScrollBill accesses</h2>
+    <p>ScrollBill uses Android's special Usage Access setting to read application foreground-usage history for the last seven completed local calendar days. It also reads application names and icons when Android makes that metadata available for presenting your report.</p>
+    <p>Usage Access is controlled by Android system settings. You can grant or revoke it at any time.</p>
+
+    <h2>How information is processed</h2>
+    <p>Usage records are queried and aggregated locally. ScrollBill does not send usage durations, package identifiers, reports, or installed-app inventories to a ScrollBill server because no server or network client exists.</p>
+    <p>ScrollBill does not use a database for usage history or report history. A generated receipt image is temporarily written to the app's private cache so Android can pass it to a destination you select.</p>
+
+    <h2>Sharing</h2>
+    <p>Sharing is explicitly user initiated. When you tap <strong>Share receipt</strong>, Android opens its Sharesheet and lets you choose another application. ScrollBill provides the image through a temporary protected content URI. ScrollBill does not automatically upload, publish, or choose a destination. The receiving application's handling of the image is outside ScrollBill's control.</p>
+
+    <h2>What ScrollBill does not do</h2>
+    <ul>
+      <li>Require an account, email address, or login</li>
+      <li>Use analytics, advertising, tracking, or crash-reporting SDKs</li>
+      <li>Upload usage information or operate a cloud backend</li>
+      <li>Request contacts, location, storage, notification access, or accessibility access</li>
+      <li>Sell personal data</li>
+      <li>Provide medical, addiction-treatment, parental-control, or app-blocking functionality</li>
+    </ul>
+
+    <h2>Permissions and visibility</h2>
+    <p>The app declares <code>PACKAGE_USAGE_STATS</code>, which is a special Android access rather than a normal runtime permission. It also declares a narrow launcher-intent package-visibility query so normal launchable applications can provide labels and icons. It does not request <code>QUERY_ALL_PACKAGES</code> or <code>INTERNET</code>.</p>
+
+    <h2>Retention</h2>
+    <p>ScrollBill does not retain a usage database, installed-app inventory, or report history. The current receipt may remain temporarily in the app's private cache and is overwritten on a later generation. Android and the application you choose to share with may have their own retention behavior.</p>
+
+    <h2>Contact</h2>
+    <p>Privacy questions can be directed to the ScrollBill project owner through the contact channel associated with the application's distribution account.</p>
+
+    <p class="legal-back"><a href="index.html">← Back to ScrollBill</a></p>
+  </main>
+
+  <footer class="site-footer section-shell">
+    <span>© <span data-current-year>2026</span> ScrollBill</span>
+    <span>Made for Android</span>
+  </footer>
+  <script src="script.js"></script>
+</body>
+</html>
