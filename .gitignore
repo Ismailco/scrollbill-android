@@ -17,3 +17,10 @@ captures/
 # Generated reports
 **/lint-report.*
 **/test-results/
+
+# Signing material
+*.jks
+*.keystore
+*.p12
+*.password
+keystore.properties
