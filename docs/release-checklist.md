@@ -7,7 +7,7 @@
 - [x] Launcher, adaptive, and monochrome icon resources included
 - [ ] Privacy policy draft reviewed and hosted publicly
 - [ ] Google Play developer account and app record prepared
-- [ ] Upload signing key configured securely outside Git
+- [ ] Upload signing key configured securely outside Git (the Gradle build accepts private environment variables or Gradle properties)
 
 ## Build and privacy review
 

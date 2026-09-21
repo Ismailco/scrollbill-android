@@ -50,7 +50,17 @@ From this directory:
 
 Install the debug APK from `app/build/outputs/apk/debug/app-debug.apk` using Android Studio or `adb`.
 
-Release builds are locally generated and not production-signed by this repository. Configure an upload keystore through secure Gradle properties or CI secrets before a Play upload; never commit the keystore or its passwords. The local release artifacts are `app/build/outputs/apk/release/app-release-unsigned.apk` and `app/build/outputs/bundle/release/app-release.aab`.
+Release signing is optional and intentionally external to the repository. Provide all four values through private Gradle properties or environment variables before a Play upload; never commit the keystore or its passwords:
+
+```bash
+export SCROLLBILL_RELEASE_STORE_FILE=/secure/path/scrollbill-upload.jks
+export SCROLLBILL_RELEASE_STORE_PASSWORD='…'
+export SCROLLBILL_RELEASE_KEY_ALIAS='scrollbill-upload'
+export SCROLLBILL_RELEASE_KEY_PASSWORD='…'
+./gradlew assembleRelease bundleRelease
+```
+
+The equivalent private Gradle property names are `scrollbill.release.storeFile`, `scrollbill.release.storePassword`, `scrollbill.release.keyAlias`, and `scrollbill.release.keyPassword`. When these values are absent, local release artifacts remain unsigned and are named `app/build/outputs/apk/release/app-release-unsigned.apk` and `app/build/outputs/bundle/release/app-release.aab`. The upload keystore must be backed up securely and retained for future updates.
 
 ## How Usage Access works
 

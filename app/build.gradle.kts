@@ -3,6 +3,25 @@ plugins {
     alias(libs.plugins.compose.compiler)
 }
 
+val releaseStoreFile = providers.gradleProperty("scrollbill.release.storeFile")
+    .orElse(providers.environmentVariable("SCROLLBILL_RELEASE_STORE_FILE"))
+    .orNull
+val releaseStorePassword = providers.gradleProperty("scrollbill.release.storePassword")
+    .orElse(providers.environmentVariable("SCROLLBILL_RELEASE_STORE_PASSWORD"))
+    .orNull
+val releaseKeyAlias = providers.gradleProperty("scrollbill.release.keyAlias")
+    .orElse(providers.environmentVariable("SCROLLBILL_RELEASE_KEY_ALIAS"))
+    .orNull
+val releaseKeyPassword = providers.gradleProperty("scrollbill.release.keyPassword")
+    .orElse(providers.environmentVariable("SCROLLBILL_RELEASE_KEY_PASSWORD"))
+    .orNull
+val hasReleaseSigning = listOf(
+    releaseStoreFile,
+    releaseStorePassword,
+    releaseKeyAlias,
+    releaseKeyPassword,
+).all { !it.isNullOrBlank() }
+
 android {
     namespace = "com.soultware.scrollbill"
     compileSdk = 36
@@ -18,10 +37,24 @@ android {
         vectorDrawables.useSupportLibrary = true
     }
 
+    signingConfigs {
+        create("release") {
+            if (hasReleaseSigning) {
+                storeFile = file(requireNotNull(releaseStoreFile))
+                storePassword = requireNotNull(releaseStorePassword)
+                keyAlias = requireNotNull(releaseKeyAlias)
+                keyPassword = requireNotNull(releaseKeyPassword)
+            }
+        }
+    }
+
     buildTypes {
         release {
             isMinifyEnabled = true
             isShrinkResources = true
+            if (hasReleaseSigning) {
+                signingConfig = signingConfigs.getByName("release")
+            }
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro",

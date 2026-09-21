@@ -3,10 +3,16 @@ package com.soultware.scrollbill.ui
 import android.graphics.Bitmap
 import android.net.Uri
 import androidx.activity.compose.BackHandler
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -18,18 +24,21 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -40,6 +49,9 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.painter.BitmapPainter
 import androidx.compose.ui.res.painterResource
@@ -47,6 +59,7 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -86,6 +99,7 @@ fun ScrollBillApp(
     ScrollBillTheme {
         when (screen) {
             ScrollBillScreen.Dashboard -> Scaffold(
+                containerColor = MaterialTheme.colorScheme.background,
                 topBar = {
                     ScrollBillTopBar(
                         showRefresh = state is ScrollBillUiState.Loaded ||
@@ -112,14 +126,8 @@ fun ScrollBillApp(
                         onRefresh = viewModel::refresh,
                         onCreateReceipt = viewModel::createReceipt,
                     )
-                    ScrollBillUiState.NoUsageData -> EmptyState(
-                        modifier = Modifier.padding(paddingValues),
-                        onRefresh = viewModel::refresh,
-                    )
-                    ScrollBillUiState.RecoverableError -> ErrorState(
-                        modifier = Modifier.padding(paddingValues),
-                        onRetry = viewModel::refresh,
-                    )
+                    ScrollBillUiState.NoUsageData -> EmptyState(Modifier.padding(paddingValues), viewModel::refresh)
+                    ScrollBillUiState.RecoverableError -> ErrorState(Modifier.padding(paddingValues), viewModel::refresh)
                 }
             }
             ScrollBillScreen.ReceiptPreview -> ReceiptPreviewScreen(
@@ -150,9 +158,16 @@ private fun ScrollBillTopBar(
     TopAppBar(
         title = {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                AppMark(Modifier.size(32.dp))
+                AppMark(Modifier.size(36.dp))
                 Spacer(Modifier.width(10.dp))
-                Text("ScrollBill", fontWeight = FontWeight.SemiBold)
+                Column(verticalArrangement = Arrangement.spacedBy(1.dp)) {
+                    Text("ScrollBill", fontWeight = FontWeight.Bold)
+                    Text(
+                        "PRIVATE SCREEN-TIME REPORT",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
             }
         },
         actions = {
@@ -168,7 +183,8 @@ private fun ScrollBillTopBar(
             }
         },
         colors = TopAppBarDefaults.topAppBarColors(
-            containerColor = MaterialTheme.colorScheme.surface,
+            containerColor = MaterialTheme.colorScheme.background,
+            scrolledContainerColor = MaterialTheme.colorScheme.background,
         ),
     )
 }
@@ -190,57 +206,82 @@ private fun AccessRequiredState(
 ) {
     LazyColumn(
         modifier = modifier.fillMaxSize(),
-        contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 24.dp, vertical = 32.dp),
+        contentPadding = PaddingValues(start = 20.dp, end = 20.dp, top = 18.dp, bottom = 32.dp),
         verticalArrangement = Arrangement.spacedBy(18.dp),
     ) {
         item {
-            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                AppMark(Modifier.size(64.dp))
-                Text("See where your time went.", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
-                Text(
-                    "ScrollBill reads Android's Usage Access history to create a private weekly report and shareable receipt.",
-                    style = MaterialTheme.typography.bodyLarge,
-                )
+            Surface(
+                modifier = Modifier.fillMaxWidth(),
+                shape = MaterialTheme.shapes.large,
+                color = MaterialTheme.colorScheme.primary,
+                tonalElevation = 4.dp,
+            ) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .drawBehind {
+                            drawCircle(Color.White.copy(alpha = 0.08f), radius = size.minDimension * 0.55f, center = androidx.compose.ui.geometry.Offset(size.width * 0.98f, 0f))
+                            drawCircle(Color.White.copy(alpha = 0.06f), radius = size.minDimension * 0.28f, center = androidx.compose.ui.geometry.Offset(size.width * 0.9f, size.height * 0.82f))
+                        }
+                        .padding(22.dp),
+                ) {
+                    Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
+                        AppMark(Modifier.size(62.dp))
+                        Text(
+                            "SEE WHERE\nYOUR TIME WENT.",
+                            style = MaterialTheme.typography.headlineMedium,
+                            color = MaterialTheme.colorScheme.onPrimary,
+                            fontWeight = FontWeight.Bold,
+                        )
+                        Text(
+                            "A private weekly report made from the Usage Access history already on your phone.",
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.84f),
+                        )
+                        Surface(shape = CircleShape, color = Color.White.copy(alpha = 0.14f)) {
+                            Text(
+                                "PRIVATE BY DESIGN",
+                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 7.dp),
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onPrimary,
+                                fontWeight = FontWeight.Bold,
+                            )
+                        }
+                    }
+                }
             }
         }
         item {
             Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                AccessBenefit("See your last 7 completed days")
-                AccessBenefit("Understand which apps took the most time")
-                AccessBenefit("Create a shareable weekly receipt")
+                AccessBenefit(number = "01", text = "See your last 7 completed days")
+                AccessBenefit(number = "02", text = "Understand which apps took the most time")
+                AccessBenefit(number = "03", text = "Create a shareable weekly receipt")
             }
         }
-        item {
-            Surface(
-                color = MaterialTheme.colorScheme.secondaryContainer,
-                shape = MaterialTheme.shapes.medium,
-            ) {
-                Text(
-                    "Your usage data stays on this device.",
-                    modifier = Modifier.padding(16.dp),
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.SemiBold,
-                )
-            }
-        }
+        item { PrivacyBanner() }
         item {
             Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 Button(
                     onClick = onGrantUsageAccess,
-                    modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp),
+                    modifier = Modifier.fillMaxWidth().heightIn(min = 54.dp),
+                    shape = RoundedCornerShape(17.dp),
                 ) {
                     Text("Grant usage access")
                 }
                 Text(
-                    "Android will open a system settings screen. ScrollBill cannot read your usage history until access is enabled.",
+                    "Android will open system settings. ScrollBill cannot read your history until access is enabled.",
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.fillMaxWidth(),
                 )
                 if (settingsError) {
                     Text(
                         "Android settings could not be opened. Try again.",
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.error,
+                        modifier = Modifier.fillMaxWidth(),
+                        textAlign = TextAlign.Center,
                     )
                 }
             }
@@ -249,20 +290,67 @@ private fun AccessRequiredState(
 }
 
 @Composable
-private fun AccessBenefit(text: String) {
-    Card {
-        Text(
-            text = text,
-            modifier = Modifier.padding(horizontal = 16.dp, vertical = 14.dp),
-            style = MaterialTheme.typography.bodyLarge,
-        )
+private fun AccessBenefit(number: String, text: String) {
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(18.dp),
+        color = MaterialTheme.colorScheme.surface,
+        tonalElevation = 1.dp,
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = 14.dp, vertical = 14.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(14.dp),
+        ) {
+            Text(number, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
+            Text(text, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.SemiBold)
+        }
+    }
+}
+
+@Composable
+private fun PrivacyBanner() {
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        color = MaterialTheme.colorScheme.secondaryContainer,
+        shape = RoundedCornerShape(18.dp),
+    ) {
+        Row(
+            modifier = Modifier.padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            Text("↗", color = MaterialTheme.colorScheme.secondary, style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
+            Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                Text("Your usage data stays on this device.", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                Text("No account. No cloud upload. No tracking.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+        }
     }
 }
 
 @Composable
 private fun LoadingState(modifier: Modifier) {
-    Box(modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-        CircularProgressIndicator()
+    val transition = rememberInfiniteTransition(label = "loading-pulse")
+    val haloColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)
+    val alpha by transition.animateFloat(
+        initialValue = 0.55f,
+        targetValue = 1f,
+        animationSpec = infiniteRepeatable(tween(900), RepeatMode.Reverse),
+        label = "loading-alpha",
+    )
+    Column(
+        modifier = modifier.fillMaxSize().padding(24.dp),
+        verticalArrangement = Arrangement.Center,
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        AppMark(Modifier.size(72.dp).drawBehind { drawCircle(haloColor, radius = size.minDimension * 0.65f) })
+        Spacer(Modifier.height(22.dp))
+        Text("Building your report", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+        Spacer(Modifier.height(6.dp))
+        Text("Reading only the local history you approved.", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, textAlign = TextAlign.Center)
+        Spacer(Modifier.height(20.dp))
+        CircularProgressIndicator(modifier = Modifier.size(26.dp), strokeWidth = 3.dp, color = MaterialTheme.colorScheme.primary.copy(alpha = alpha))
     }
 }
 
@@ -275,34 +363,47 @@ private fun DashboardState(
 ) {
     LazyColumn(
         modifier = modifier.fillMaxSize(),
-        contentPadding = androidx.compose.foundation.layout.PaddingValues(start = 20.dp, end = 20.dp, bottom = 28.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp),
+        contentPadding = PaddingValues(start = 20.dp, end = 20.dp, top = 8.dp, bottom = 30.dp),
+        verticalArrangement = Arrangement.spacedBy(18.dp),
     ) {
         item {
-            Column {
-                Spacer(Modifier.height(8.dp))
-                Text("Last 7 days", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
-                Text(
-                    formatDateRange(summary.reportingPeriod),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
+            Column(verticalArrangement = Arrangement.spacedBy(5.dp)) {
+                Text("YOUR WEEK, IN VIEW", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary)
+                Text("Last 7 days", style = MaterialTheme.typography.headlineLarge)
+                Text(formatDateRange(summary.reportingPeriod), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         }
+        item { HeroSummary(summary) }
         item { SummaryCards(summary) }
         item {
-            Button(onClick = onCreateReceipt, modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp)) {
-                Text("Create my receipt")
+            Button(
+                onClick = onCreateReceipt,
+                modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp),
+                shape = RoundedCornerShape(18.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.onSurface,
+                    contentColor = MaterialTheme.colorScheme.background,
+                ),
+            ) {
+                Text("Create my receipt", fontWeight = FontWeight.Bold)
+                Spacer(Modifier.width(10.dp))
+                Text("↗", style = MaterialTheme.typography.titleLarge)
             }
         }
         item {
-            Text("Top applications", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.SemiBold)
+            Row(verticalAlignment = Alignment.Bottom, modifier = Modifier.fillMaxWidth()) {
+                Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
+                    Text("Top applications", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+                    Text("Where your minutes went", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+                Text("TOP 5", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
+            }
         }
         itemsIndexed(summary.rankedApplications.take(5), key = { _, app -> app.packageName }) { index, app ->
             AppUsageRow(rank = index + 1, app = app)
         }
         item {
-            Button(onClick = onRefresh, modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp)) {
+            OutlinedButton(onClick = onRefresh, modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp), shape = RoundedCornerShape(16.dp)) {
                 Icon(Icons.Default.Refresh, contentDescription = null)
                 Spacer(Modifier.width(8.dp))
                 Text("Refresh report")
@@ -312,32 +413,49 @@ private fun DashboardState(
 }
 
 @Composable
+private fun HeroSummary(summary: UsageSummaryUi) {
+    Surface(
+        modifier = Modifier
+            .fillMaxWidth()
+            .drawBehind {
+                drawCircle(Color.White.copy(alpha = 0.08f), radius = size.minDimension * 0.72f, center = androidx.compose.ui.geometry.Offset(size.width * 0.98f, 0f))
+                drawCircle(Color.White.copy(alpha = 0.05f), radius = size.minDimension * 0.42f, center = androidx.compose.ui.geometry.Offset(size.width * 0.98f, 0f))
+            },
+        shape = MaterialTheme.shapes.large,
+        color = MaterialTheme.colorScheme.primary,
+        tonalElevation = 5.dp,
+    ) {
+        Column(modifier = Modifier.padding(22.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                Text("TOTAL SCREEN TIME", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.78f), modifier = Modifier.weight(1f))
+                Surface(shape = CircleShape, color = Color.White.copy(alpha = 0.14f)) {
+                    Text("7 DAYS", modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onPrimary, fontWeight = FontWeight.Bold)
+                }
+            }
+            Text(formatDuration(summary.totalDurationMillis), style = MaterialTheme.typography.headlineLarge, color = MaterialTheme.colorScheme.onPrimary, fontWeight = FontWeight.Bold)
+            Text("A clear view of the time your apps asked for this week.", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.82f))
+        }
+    }
+}
+
+@Composable
 private fun SummaryCards(summary: UsageSummaryUi) {
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         Row(horizontalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.fillMaxWidth()) {
-            SummaryCard("Total screen time", formatDuration(summary.totalDurationMillis), Modifier.weight(1f))
             SummaryCard("Daily average", formatDuration(summary.averageDailyDurationMillis), Modifier.weight(1f))
-        }
-        Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer)) {
-            Column(Modifier.padding(18.dp)) {
-                Text("Projected phone use", style = MaterialTheme.typography.labelLarge)
-                Text(
-                    formatProjectedAnnualUsage(summary.projectedAnnualDurationMillis),
-                    style = MaterialTheme.typography.headlineSmall,
-                    fontWeight = FontWeight.Bold,
-                )
-                Text(
-                    "A projection based on this week's daily average.",
-                    style = MaterialTheme.typography.bodySmall,
-                )
-            }
+            SummaryCard("Projected / year", formatProjectedAnnualUsage(summary.projectedAnnualDurationMillis), Modifier.weight(1f))
         }
         summary.highestUsageApplication?.let { app ->
-            Card {
-                Column(Modifier.padding(18.dp)) {
-                    Text("Most-used app", style = MaterialTheme.typography.labelLarge)
-                    Spacer(Modifier.height(8.dp))
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(21.dp),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+            ) {
+                Column(Modifier.padding(17.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    Text("MOST-USED APP", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.secondary, fontWeight = FontWeight.Bold)
                     AppUsageRow(rank = null, app = app, showDuration = false)
+                    Text("Leading your weekly usage", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
         }
@@ -346,11 +464,15 @@ private fun SummaryCards(summary: UsageSummaryUi) {
 
 @Composable
 private fun SummaryCard(label: String, value: String, modifier: Modifier) {
-    Card(modifier = modifier) {
-        Column(Modifier.padding(16.dp)) {
+    Card(
+        modifier = modifier.heightIn(min = 100.dp),
+        shape = RoundedCornerShape(21.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+    ) {
+        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Text(label, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            Spacer(Modifier.height(6.dp))
-            Text(value, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+            Text(value, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis)
         }
     }
 }
@@ -358,28 +480,28 @@ private fun SummaryCard(label: String, value: String, modifier: Modifier) {
 @Composable
 private fun AppUsageRow(rank: Int?, app: AppUsageUi, showDuration: Boolean = true) {
     Row(
-        modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp),
+        modifier = Modifier.fillMaxWidth().heightIn(min = 58.dp),
         verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(11.dp),
     ) {
         rank?.let {
-            Text(
-                "$it",
-                modifier = Modifier.width(28.dp),
-                style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
+            Surface(modifier = Modifier.size(28.dp), shape = CircleShape, color = MaterialTheme.colorScheme.primaryContainer) {
+                Box(contentAlignment = Alignment.Center) {
+                    Text("$it", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onPrimaryContainer, fontWeight = FontWeight.Bold)
+                }
+            }
         }
         AppIcon(app.icon, app.displayLabel)
-        Spacer(Modifier.width(12.dp))
         Text(
             app.displayLabel,
             modifier = Modifier.weight(1f),
             style = MaterialTheme.typography.bodyLarge,
-            maxLines = 2,
+            fontWeight = FontWeight.SemiBold,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
         )
         if (showDuration) {
-            Spacer(Modifier.width(12.dp))
-            Text(formatDuration(app.foregroundDurationMillis), style = MaterialTheme.typography.labelLarge)
+            Text(formatDuration(app.foregroundDurationMillis), style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
     }
 }
@@ -390,16 +512,16 @@ private fun AppIcon(icon: Bitmap?, label: String) {
         Image(
             painter = BitmapPainter(icon.asImageBitmap()),
             contentDescription = "$label app icon",
-            modifier = Modifier.size(40.dp),
+            modifier = Modifier.size(40.dp).clip(RoundedCornerShape(12.dp)),
         )
     } else {
         Surface(
             modifier = Modifier.size(40.dp).semantics { contentDescription = "App icon unavailable for $label" },
-            shape = RoundedCornerShape(10.dp),
+            shape = RoundedCornerShape(12.dp),
             color = MaterialTheme.colorScheme.surfaceVariant,
         ) {
             Box(contentAlignment = Alignment.Center) {
-                Text("•", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text("•", color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.titleLarge)
             }
         }
     }
@@ -407,24 +529,12 @@ private fun AppIcon(icon: Bitmap?, label: String) {
 
 @Composable
 private fun EmptyState(modifier: Modifier, onRefresh: () -> Unit) {
-    MessageState(
-        modifier = modifier,
-        title = "No usage data yet",
-        message = "Android has not provided enough usage history for the selected period.",
-        actionLabel = "Refresh report",
-        onAction = onRefresh,
-    )
+    MessageState(modifier, "No usage data yet", "Android has not provided enough usage history for the selected period.", "Refresh report", onRefresh)
 }
 
 @Composable
 private fun ErrorState(modifier: Modifier, onRetry: () -> Unit) {
-    MessageState(
-        modifier = modifier,
-        title = "We couldn't load your report",
-        message = "Usage Access may have changed. Check access and try again.",
-        actionLabel = "Retry",
-        onAction = onRetry,
-    )
+    MessageState(modifier, "We couldn't load your report", "Usage Access may have changed. Check access and try again.", "Retry", onRetry)
 }
 
 @Composable
@@ -434,11 +544,15 @@ private fun MessageState(modifier: Modifier, title: String, message: String, act
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        Text(title, style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center)
-        Spacer(Modifier.height(12.dp))
+        Surface(shape = CircleShape, color = MaterialTheme.colorScheme.primaryContainer, tonalElevation = 2.dp) {
+            AppMark(Modifier.padding(16.dp).size(58.dp))
+        }
+        Spacer(Modifier.height(24.dp))
+        Text(title, style = MaterialTheme.typography.headlineSmall, textAlign = TextAlign.Center)
+        Spacer(Modifier.height(10.dp))
         Text(message, style = MaterialTheme.typography.bodyLarge, textAlign = TextAlign.Center, color = MaterialTheme.colorScheme.onSurfaceVariant)
         Spacer(Modifier.height(24.dp))
-        Button(onClick = onAction, modifier = Modifier.heightIn(min = 52.dp)) { Text(actionLabel) }
+        Button(onClick = onAction, modifier = Modifier.heightIn(min = 52.dp), shape = RoundedCornerShape(16.dp)) { Text(actionLabel) }
     }
 }
 
@@ -447,8 +561,7 @@ private fun formatDateRange(period: UsagePeriod): String {
     val end = period.localEndExclusiveDate.minusDays(1)
     val formatter = DateTimeFormatter.ofPattern("MMM d, yyyy", Locale.getDefault())
     return if (start.year == end.year) {
-        "${DateTimeFormatter.ofPattern("MMM d", Locale.getDefault()).format(start)} – " +
-            formatter.format(end)
+        "${DateTimeFormatter.ofPattern("MMM d", Locale.getDefault()).format(start)} – ${formatter.format(end)}"
     } else {
         "${formatter.format(start)} – ${formatter.format(end)}"
     }
@@ -458,11 +571,7 @@ private fun formatDateRange(period: UsagePeriod): String {
 @Composable
 private fun AccessRequiredPreview() {
     ScrollBillTheme {
-        AccessRequiredState(
-            modifier = Modifier.fillMaxSize(),
-            onGrantUsageAccess = {},
-            settingsError = false,
-        )
+        AccessRequiredState(Modifier.fillMaxSize(), {}, false)
     }
 }
 
